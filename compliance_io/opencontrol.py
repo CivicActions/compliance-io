@@ -5,18 +5,31 @@ from typing import List
 from typing import Optional
 from typing import Set
 
-import click
-import yaml
+import rtyaml
+from blinker import signal
 from pydantic import BaseModel
 from pydantic import PrivateAttr
-from yaml import CSafeLoader as SafeLoader
+from slugify import slugify
 
 OPENCONTROL_SCHEMA_VERSION = "1.0.0"
 COMPONENT_SCHEMA_VERSION = "3.1.0"
 
+FILE_SIGNAL = signal("opencontrol_file_operation")
+
 
 class OpenControlElement(BaseModel):
-    pass
+    def new_relative_path(self):
+        assert False
+
+    def storage_path(self, root_dir=None):
+        if hasattr(self, "_file"):
+            p = Path(self._file)
+        else:
+            p = self.new_relative_path()
+        if root_dir:
+            return root_dir / p
+        else:
+            return p
 
 
 class Reference(OpenControlElement):
@@ -70,6 +83,9 @@ class Component(OpenControlElement):
     satisfies: Optional[List[Control]]
     _file: str = PrivateAttr()
 
+    def new_relative_path(self):
+        return Path("components") / Path(self.name) / Path("component.yaml")
+
 
 class StandardControl(OpenControlElement):
     family: str
@@ -82,17 +98,25 @@ class Standard(OpenControlElement):
     license: Optional[str]
     source: Optional[str]
     controls: Dict[str, StandardControl]
+    _file: str = PrivateAttr()
+
+    def new_relative_path(self):
+        return Path("standards") / Path(slugify(self.name)).with_suffix(".yaml")
 
 
 class Certification(OpenControlElement):
     name: str
     standards: Dict[str, Dict[str, dict]]
+    _file: str = PrivateAttr()
 
     def standard_keys(self):
         return set(self.standards.keys())
 
     def controls(self, standard):
         return set(self.standards[standard].keys())
+
+    def new_relative_path(self):
+        return Path("certifications") / Path(slugify(self.name)).with_suffix(".yaml")
 
 
 class System(OpenControlElement):
@@ -112,6 +136,66 @@ class OpenControl(OpenControlElement):
     standards: Dict[str, Standard] = {}
     systems: List[System] = []
     certifications: List[Certification] = []
+
+    _root_dir: str = PrivateAttr()
+
+    def new_relative_path(self):
+        return Path("opencontrol.yaml")
+
+    @classmethod
+    def debug_file(cls, sender, **kwargs):
+        print(
+            "Loaded file" if kwargs["operation"] == "read" else "Wrote file",
+            kwargs["path"],
+        )
+
+    @classmethod
+    def load(cls, f, debug=True):
+        p = Path(f)
+        if debug:
+            FILE_SIGNAL.connect(OpenControl.debug_file)
+
+        with p.open() as f:
+            root = rtyaml.load(f)
+            FILE_SIGNAL.send(cls, operation="read", path=p)
+            oc = OpenControlYaml.parse_obj(root).resolve(p.parent)
+            oc._root_dir = p.parent
+            return oc
+
+    def save(self):
+        "Write back an OpenControl repo to where it was loaded"
+        root_dir = self._root_dir
+        root = self.dict(exclude={"standards", "components", "systems"})
+        root["certifications"] = [
+            str(cert.storage_path(root_dir)) for cert in self.certifications
+        ]
+        root["standards"] = [
+            str(std.storage_path(root_dir)) for std in self.standards.values()
+        ]
+        root["components"] = [str(c.storage_path(root_dir)) for c in self.components]
+        print(rtyaml.dump(root))
+
+    def save_as(self, base_dir):
+        "Save an OpenControl repo in a new location"
+        root = self.dict(exclude={"standards", "components", "systems"})
+        root["certifications"] = [
+            str(cert.storage_path()) for cert in self.certifications
+        ]
+        root["standards"] = [str(std.storage_path()) for std in self.standards.values()]
+        root["components"] = [str(c.storage_path()) for c in self.components]
+
+        root_storage = self.storage_path(base_dir)
+        with root_storage.open("w") as root_file:
+            root_file.write(rtyaml.dump(root))
+            FILE_SIGNAL.send(self, operation="write", path=root_storage)
+
+        for c in self.components:
+            component_path = c.storage_path(base_dir)
+            component_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with component_path.open("w") as component_file:
+                component_file.write(rtyaml.dump(c.dict()))
+            FILE_SIGNAL.send(self, operation="write", path=component_path)
 
 
 class FenComponent(BaseModel):
@@ -162,6 +246,7 @@ class OpenControlYaml(BaseModel):
             component_path = self._component_path(component, relative_to)
             if component_path.is_file():
                 component = self.resolve_component(component_path)
+                component._file = component_path.relative_to(relative_to)
                 resolved_components.append(component)
             else:
                 msg = f"Can't open component file '{component_path}'"
@@ -181,7 +266,7 @@ class OpenControlYaml(BaseModel):
             satisfier_path = component_path.parent / satisfier
             if satisfier_path.is_file():
                 with satisfier_path.open() as f:
-                    obj = yaml.load(f, Loader=SafeLoader)
+                    obj = rtyaml.load(f)
                     family = FenFamily.parse_obj(obj)
                     for satisfaction in family.satisfies:
                         satisfaction._file = satisfier_path
@@ -192,17 +277,15 @@ class OpenControlYaml(BaseModel):
             name=fc.name,
             satisfies=resolved_satisfiers,
         )
-        c._file = str(component_path)
         return c
 
     def resolve_component(self, component_path):
         with component_path.open() as f:
-            obj = yaml.load(f, Loader=SafeLoader)
+            obj = rtyaml.load(f)
             if self._is_fen(obj):
                 return self.resolve_fen_component(obj, component_path)
             else:
                 comp = Component.parse_obj(obj)
-            comp._file = str(component_path)
             return comp
 
     def resolve_certifications(self, relative_to):
@@ -211,9 +294,10 @@ class OpenControlYaml(BaseModel):
             certification_path = relative_to / certification
             if certification_path.is_file():
                 with certification_path.open() as f:
-                    obj = yaml.load(f, Loader=SafeLoader)
+                    obj = rtyaml.load(f)
+                    FILE_SIGNAL.send(self, operation="read", path=certification_path)
                     cert = Certification.parse_obj(obj)
-                    print(f"Loaded certification {certification_path}")
+                    cert._file = certification
                     certifications.append(cert)
             else:
                 msg = f"Can't open certification file '{certification_path}'"
@@ -226,14 +310,14 @@ class OpenControlYaml(BaseModel):
             standard_path = relative_to / standard
             if standard_path.is_file():
                 with standard_path.open() as f:
-                    obj = yaml.load(f, Loader=SafeLoader)
-                    print(f"Loaded standard {standard_path}")
-
+                    obj = rtyaml.load(f)
+                    FILE_SIGNAL.send(self, operation="read", path=standard_path)
                     name = obj.pop("name")
-                    if "source" in obj:
-                        source = obj.pop("source")
-                    if "license" in obj:
-                        license = obj.pop("license")
+
+                    # TODO: source and license are not in the spec?
+
+                    source = obj.pop("source", "")
+                    license = obj.pop("license", "")
 
                     controls = {
                         control: StandardControl.parse_obj(desc)
@@ -241,10 +325,11 @@ class OpenControlYaml(BaseModel):
                         if "family" in desc
                     }
 
-                    standard = Standard(
+                    std = Standard(
                         name=name, controls=controls, source=source, license=license
                     )
-                    standards[name] = standard
+                    std._file = standard
+                    standards[name] = std
             else:
                 raise Exception(f"Can't open standard file '{standard_path}'")
         return standards
@@ -256,32 +341,20 @@ class OpenControlYaml(BaseModel):
 def load(f):
     p = Path(f)
     with p.open() as f:
-        root = yaml.load(f, Loader=SafeLoader)
+        root = rtyaml.load(f)
     oc = OpenControlYaml.parse_obj(root)
     return oc.resolve(p.parent)
 
 
-@click.command()
-@click.argument("path", type=click.Path())
-def main(path):
-    oc = load(path)
-    print(oc.metadata.description)
-    print(len(oc.certifications), "certifications")
-    for c in oc.certifications:
-        print(" *", c.name)
-        for s in c.standard_keys():
-            print("    ", s, len(c.controls(s)), "controls")
-
-    print(len(oc.standards), "standards")
-    for s in oc.standards.values():
-        print(" *", s.name, len(s.controls.keys()), "controls")
-    print(len(oc.components), "components")
-    for c in oc.components:
-        print(" *", c.name, "from", c._file)
-        print("   ", len(c.satisfies), "controls")
-
-
-#        for c in c.satisfies:
-#            print("    ", c.control_key, c._file)
-if __name__ == "__main__":
-    main()
+def dump(oc, base_dir):
+    base = Path(base_dir)
+    if base.is_dir():
+        root = oc.dict(exclude={"standards", "components", "systems"})
+        root["certifications"] = [
+            str(cert.storage_path(base_dir)) for cert in oc.certifications
+        ]
+        root["standards"] = [
+            str(std.storage_path(base_dir)) for std in oc.standards.values()
+        ]
+        root["components"] = [str(c.storage_path(base_dir)) for c in oc.components]
+        print(rtyaml.dump(root))
