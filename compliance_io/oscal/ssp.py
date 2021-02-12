@@ -4,19 +4,21 @@ from typing import Optional
 from uuid import UUID
 from uuid import uuid4
 
-from component import ImplementedRequirement
-from component import Statement
-from oscal import Annotation
-from oscal import BackMatter
-from oscal import Link
-from oscal import MarkupLine
-from oscal import MarkupMultiLine
-from oscal import Metadata
-from oscal import NCName
-from oscal import OSCALElement
-from oscal import Property
-from oscal import Resource
 from pydantic import Field
+
+from .oscal import Annotation
+from .oscal import BackMatter
+from .oscal import Link
+from .oscal import MarkupLine
+from .oscal import MarkupMultiLine
+from .oscal import Metadata
+from .oscal import NCName
+from .oscal import OSCALElement
+from .oscal import Party
+from .oscal import Property
+from .oscal import Resource
+from .oscal import Role
+from .oscal import SetParameter
 
 
 class ImportProfile(OSCALElement):
@@ -93,6 +95,13 @@ class AuthorizationBoundary(OSCALElement):
     diagrams: Dict[str, Diagram] = {}
     remarks: Optional[MarkupMultiLine]
 
+    def add_diagram(self, diagram: Diagram):
+        key = str(diagram.uuid)
+        if key in self.diagram:
+            raise KeyError(f"Diagram {key} already in AuthorizationBoundary")
+        self.diagrams[key] = diagram
+        return self
+
     class Config:
         exclude_if_false = ["diagrams"]
 
@@ -168,11 +177,7 @@ class Protocol(OSCALElement):
     pass
 
 
-class Role(OSCALElement):
-    pass
-
-
-class SystemComponent(OSCALElement):
+class Component(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
     type: Optional[str]
     title: MarkupLine
@@ -210,11 +215,11 @@ class SystemImplementation(OSCALElement):
     links: Optional[List[Link]]
     leveraged_authorizations: Optional[List[str]]
     users: Dict[str, User] = {}
-    components: Dict[str, SystemComponent] = {}
+    components: Dict[str, Component] = {}
     inventory_items: Optional[List[InventoryItem]]
     remarks: Optional[MarkupMultiLine]
 
-    def add_component(self, component: SystemComponent):
+    def add_component(self, component: Component):
         key = str(component.uuid)
         if key in self.components:
             raise KeyError(f"Component {key} already in SystemImplementation")
@@ -229,6 +234,56 @@ class SystemImplementation(OSCALElement):
         allow_population_by_field_name = True
 
 
+class ResponsibleRole(OSCALElement):
+    role_id: str
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
+    links: Optional[List[Link]]
+    party_uuids: Optional[List[UUID]]
+    remarks: Optional[MarkupMultiLine]
+
+    class Config:
+        fields = {"party_uuids": "party-uuids"}
+
+
+class Responsibility(OSCALElement):
+    uuid: UUID = Field(default_factory=uuid4)
+    provided_uuid: Optional[UUID]
+    description: MarkupMultiLine
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
+    links: Optional[List[Link]]
+    responsible_roles: Dict[str, ResponsibleRole] = {}
+    remarks: Optional[MarkupMultiLine]
+
+    class Config:
+        fields = {"responsible_roles": "responsible-roles"}
+        exclude_if_false = ["responsible-roles"]
+
+
+class Provided(OSCALElement):
+    uuid: UUID = Field(default_factory=uuid4)
+    description: MarkupMultiLine
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
+    links: Optional[List[Link]]
+    responsible_roles: Dict[str, ResponsibleRole] = {}
+
+    class Config:
+        fields = {"responsible_roles": "responsible-roles"}
+        exclude_if_false = ["responsible-roles"]
+
+
+class Export(OSCALElement):
+    description: Optional[MarkupMultiLine]
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
+    links: Optional[List[Link]]
+    provided: Optional[List[Provided]]
+    responsibilities: Optional[List[Responsibility]]
+    remarks: Optional[MarkupMultiLine]
+
+
 class Inherited(OSCALElement):
     pass
 
@@ -238,46 +293,105 @@ class Satisfied(OSCALElement):
 
 
 class ByComponent(OSCALElement):
-    uuid: UUID = Field(default_factory=uuid4)
     component_uuid: UUID
+    uuid: UUID = Field(default_factory=uuid4)
     description: MarkupMultiLine
     props: Optional[List[Property]]
     annotations: Optional[List[Annotation]]
     links: Optional[List[Link]]
+    parameter_settings: Optional[List[SetParameter]]
+    export: Optional[Export]
     inherited: Optional[List[Inherited]]
     satisfied: Optional[List[Satisfied]]
+    responsible_roles: Dict[str, ResponsibleRole] = {}
+    remarks: Optional[MarkupMultiLine]
 
     class Config:
-        fields = {"component_uuid": "component-uuid"}
-        container_assigned = ["component_uuid"]
+        fields = {
+            "component_uuid": "component-uuid",
+            "parameter_settings": "parameter-settings",
+            "responsible_roles": "responsible-roles",
+        }
+        container_assigned = ["component-uuid"]
         allow_population_by_field_name = True
+        exclude_if_false = ["responsible-roles"]
 
 
-class SetParameter(OSCALElement):
-    param_id: NCName
-    values: List[str]
+class Statement(OSCALElement):
+    statement_id: NCName
+    uuid: UUID = Field(default_factory=uuid4)
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
+    links: Optional[List[Link]]
+    by_components: Dict[str, Component] = {}
+    remarks: Optional[MarkupMultiLine]
+
+    def add_by_component(self, by_component: ByComponent):
+        key = str(by_component.component_uuid)
+        if key in self.by_components:
+            raise KeyError(f"By Component {key} already in Statement")
+        self.by_components[key] = by_component
+        return self
 
     class Config:
-        fields = {"param_id": "param-id"}
-        allow_population_by_field_name = True
+        fields = {"by_components": "by-components"}
+        container_assigned = ["statement_id"]
+        exclude_if_false = ["by-components"]
 
 
-class SystemImplementedRequirement(ImplementedRequirement):
+class ImplementedRequirement(OSCALElement):
+    uuid: UUID = Field(default_factory=uuid4)
+    control_id: str
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
+    links: Optional[List[Link]]
+    parameter_settings: Dict[str, SetParameter] = {}
+    responsible_roles: Dict[str, ResponsibleRole] = {}
     by_components: Dict[str, ByComponent] = {}
-    parameter_settings: Optional[List[SetParameter]]
+    statements: Dict[str, Statement] = {}
+    remarks: Optional[MarkupMultiLine]
+
+    def add_statement(self, statement: Statement):
+        key = statement.statement_id
+        if key in self.statements:
+            raise KeyError(
+                f"Statement {key} already in ImplementedRequirement"
+                " for {self.control_id}"
+            )
+        self.statements[NCName(statement.statement_id)] = statement
+        return self
+
+    def add_parameter(self, set_parameter: SetParameter):
+        key = set_parameter.param_id
+        if key in self.parameter_settings:
+            raise KeyError(
+                f"SetParameter {key} already in ImplementedRequirement"
+                " for {self.control_id}"
+            )
+        self.parameter_settings[key] = set_parameter
+        return self
+
+    def add_by_component(self, by_component: ByComponent):
+        key = str(by_component.component_uuid)
+        if key in self.by_components:
+            raise KeyError(f"By Component for component {key} already in Statement")
+        self.by_components[key] = by_component
+        return self
 
     class Config:
         fields = {
             "by_components": "by-components",
             "parameter_settings": "parameter-settings",
+            "responsible_roles": "responsible-roles",
         }
         allow_population_by_field_name = True
-        exclude_if_false = ["by-components"]
+        container_assigned = ["uuid"]
+        exclude_if_false = ["by-components", "responsible-roles"]
 
 
 class ControlImplementation(OSCALElement):
     description: MarkupMultiLine
-    implemented_requirements: List[SystemImplementedRequirement]
+    implemented_requirements: List[ImplementedRequirement]
 
     class Config:
         fields = {"implemented_requirements": "implemented-requirements"}
@@ -304,7 +418,7 @@ class SystemSecurityPlan(OSCALElement):
         allow_population_by_field_name = True
 
 
-class SystemSecurityPlanRoot(OSCALElement):
+class Model(OSCALElement):
     system_security_plan: SystemSecurityPlan
 
     class Config:
@@ -320,16 +434,15 @@ class SystemSecurityPlanRoot(OSCALElement):
         return super().json(by_alias=True, exclude_none=True, **kwargs)
 
 
-class OSCALSystemSecurityPlanJson(SystemSecurityPlanRoot):
-    def load(self, f):
-        return SystemSecurityPlanRoot()
-
-    def save_as(self, f):
-        pass
-
-
 def main():
     md = Metadata(title="System Security Plan", version="1.2.3")
+    ciso = Role(id="security-operations", title="CISO")
+    fen = Party(type="person", name="Fen", email_addresses=["fen@civicactions.com"])
+    tom = Party(type="person", name="Tom", email_addresses=["tom@civicactions.com"])
+    md.parties = [fen, tom]
+    md.roles = [ciso]
+    md.responsible_parties
+
     ip = ImportProfile(href="https://nist.gov/800-53-rev4")
     ssec = SecurityImpactLevel(
         security_objective_confidentiality="high",
@@ -355,20 +468,31 @@ def main():
         status=SystemStatus(state="operational"),
     )
     si = SystemImplementation()
-    si.add_component(
-        SystemComponent(
-            title="This System",
-            type="this-system",
-            description="This System",
-            status=SystemStatus(state="operational"),
+    this_system = Component(
+        title="This System",
+        type="this-system",
+        description="This System",
+        status=SystemStatus(state="operational"),
+    )
+    drupal = Component(
+        title="Drupal",
+        type="software",
+        description="Drupal",
+        status=SystemStatus(state="operational"),
+    )
+    si.add_component(this_system).add_component(drupal)
+    ir = ImplementedRequirement(control_id="AC-1", description="Access Control")
+    ir.add_by_component(
+        ByComponent(component_uuid=drupal.uuid, description="AC-1 provided by Drupal")
+    )
+    ir.add_parameter(SetParameter(param_id="AC-1_prm_1", values=["every 30 days"]))
+    ir.add_statement(
+        Statement(statement_id="AC-1_smt").add_by_component(
+            ByComponent(
+                component_uuid=drupal.uuid, description="AC-1 provided by Drupal"
+            )
         )
     )
-    ir = SystemImplementedRequirement(control_id="AC-1", description="Access Control")
-    ir.parameter_settings = [
-        SetParameter(param_id="AC-1_prm_1", values=["every 30 days"])
-    ]
-    ir.add_statement(Statement(statement_id="AC-1_smt"))
-
     ci = ControlImplementation(
         description="Our requirements", implemented_requirements=[ir]
     )
@@ -382,7 +506,7 @@ def main():
         control_implementation=ci,
         back_matter=bm,
     )
-    root = SystemSecurityPlanRoot(system_security_plan=ssp)
+    root = Model(system_security_plan=ssp)
 
     print(root.json(indent=2))
 

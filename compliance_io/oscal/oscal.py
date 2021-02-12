@@ -7,6 +7,7 @@ import re
 from datetime import datetime
 from datetime import timezone
 from enum import Enum
+from typing import Dict
 from typing import List
 from typing import Optional
 from uuid import UUID
@@ -161,49 +162,6 @@ class Resource(OSCALElement):
     # missing: annotations, document-ids, citation, rlinks, base64
 
 
-class BackMatter(OSCALElement):
-    resources: Optional[List[Resource]]
-
-
-class Email(str):
-    pass
-
-
-class Revision(OSCALElement):
-    title: Optional[str]
-    published: Optional[datetime]
-    last_modified: Optional[datetime]
-    version: Optional[str]
-    oscal_version: Optional[str]
-    properties: Optional[List[Property]]
-
-    class Config:
-        fields = {"last_modified": "last-modified", "oscal_version": "oscal-version"}
-        allow_population_by_field_name = True
-
-
-class PartyTypeEnum(str, Enum):
-    person = "person"
-    organization = "organization"
-
-
-class Party(OSCALElement):
-    uuid: UUID = Field(default_factory=uuid4)
-    type: PartyTypeEnum
-    party_name: str
-    short_name: Optional[str]
-    properties: Optional[List[Property]]
-    email_addresses: Optional[List[Email]]
-
-    class Config:
-        fields = {
-            "party_name": "party-name",
-            "short_name": "short-name",
-            "email_addresses": "email-addresses",
-        }
-        allow_population_by_field_name = True
-
-
 class LinkRelEnum(str, Enum):
     homepage = "homepage"
     interview_notes = "interview-notes"
@@ -232,21 +190,154 @@ class Annotation(OSCALElement):
     remarks: Optional[MarkupMultiLine]
 
 
+class BackMatter(OSCALElement):
+    resources: Optional[List[Resource]]
+
+
+class EmailAddress(str):
+    pass
+
+
+class TelephoneNumber(OSCALElement):
+    type: Optional[str]
+    number: str
+
+
+class Revision(OSCALElement):
+    title: Optional[str]
+    published: Optional[datetime]
+    last_modified: Optional[datetime]
+    version: Optional[str]
+    oscal_version: Optional[str]
+    props: Optional[List[Property]]
+
+    class Config:
+        fields = {"last_modified": "last-modified", "oscal_version": "oscal-version"}
+        allow_population_by_field_name = True
+
+
+class PartyTypeEnum(str, Enum):
+    person = "person"
+    organization = "organization"
+
+
+class Party(OSCALElement):
+    uuid: UUID = Field(default_factory=uuid4)
+    type: PartyTypeEnum
+    name: Optional[str]
+    short_name: Optional[str]
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
+    links: Optional[List[Link]]
+    email_addresses: Optional[List[EmailAddress]]
+    telephone_numbers: Optional[List[TelephoneNumber]]
+    remarks: Optional[MarkupMultiLine]
+
+    class Config:
+        fields = {
+            "party_name": "party-name",
+            "short_name": "short-name",
+            "email_addresses": "email-addresses",
+            "telephone_numbers": "telephone-numbers",
+        }
+        allow_population_by_field_name = True
+
+
+class Location(OSCALElement):
+    pass
+
+
+class RoleIDEnum(str, Enum):
+    asset_administrator = "asset-administrator"
+    asset_owner = "asset-owner"
+    authorizing_official = "authorizing-official"
+    authorizing_official_poc = "authorizing-official-poc"
+    configuration_management = "configuration-management"
+    content_approver = "content-approver"
+    help_desk = "help-desk"
+    incident_response = "incident-response"
+    information_system_security_officer = "information-system-security-officer"
+    maintainer = "maintainer"
+    network_operations = "network-operations"
+    prepared_by = "prepared_by"
+    prepared_for = "prepared_for"
+    privacy_poc = "privacy-poc"
+    provider = "provider"
+    security_operations = "security-operations"
+    system_owner = "system-owner"
+    system_owner_poc_management = "system-owner-poc-management"
+    system_owner_poc_other = "system-owner-poc-other"
+    system_owner_poc_technical = "system-owner-poc-technical"
+
+
+class Role(OSCALElement):
+    id: RoleIDEnum
+    title: MarkupLine
+    short_name: Optional[str]
+    description: Optional[MarkupMultiLine]
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
+    links: Optional[List[Link]]
+    remarks: Optional[MarkupMultiLine]
+
+
+class ResponsibleParty(OSCALElement):
+    role_id: RoleIDEnum
+    party_uuids: List[UUID]
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
+    links: Optional[List[Link]]
+    remarks: Optional[MarkupMultiLine]
+
+    class Config:
+        fields = {"party_uuids": "party-uuids"}
+        allow_population_by_field_name = True
+        container_assigned = ["role_id"]
+
+
 class Metadata(OSCALElement):
     title: str
     version: str
     oscal_version: str = OSCAL_VERSION
+    revisions: Optional[List[Revision]]
     published: datetime = datetime.now(timezone.utc)
     last_modified: datetime = datetime.now(timezone.utc)
-    properties: Optional[List[Property]]
-    parties: Optional[List[Party]]
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
     links: Optional[List[Link]]
-    revision_history: Optional[List[Revision]]
+    roles: Optional[List[Role]]
+    locations: Optional[List[Location]]
+    parties: Optional[List[Party]]
+    responsible_parties: Dict[str, ResponsibleParty] = {}
 
     class Config:
         fields = {
             "oscal_version": "oscal-version",
             "last_modified": "last-modified",
-            "revision_history": "revision-history",
+            "responsible_parties": "responsible-parties",
         }
+        exclude_if_false = ["responsible-parties"]
         allow_population_by_field_name = True
+
+
+class SetParameter(OSCALElement):
+    param_id: NCName
+    values: List[str]
+
+    class Config:
+        allow_population_by_field_name = True
+        container_assigned = ["param_id"]
+
+
+class ResponsibleRole(OSCALElement):
+    role_id: str
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
+    links: Optional[List[Link]]
+    party_uuids: Optional[List[UUID]]
+    remarks: Optional[MarkupMultiLine]
+
+    class Config:
+        fields = {"party_uuids": "party-uuids"}
+        allow_population_by_field_name = True
+        container_assigned = ["role_id"]

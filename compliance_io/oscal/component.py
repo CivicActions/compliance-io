@@ -5,16 +5,19 @@ from typing import Optional
 from uuid import UUID
 from uuid import uuid4
 
-from oscal import Annotation
-from oscal import BackMatter
-from oscal import Link
-from oscal import MarkupLine
-from oscal import MarkupMultiLine
-from oscal import Metadata
-from oscal import NCName
-from oscal import OSCALElement
-from oscal import Property
 from pydantic import Field
+
+from .oscal import Annotation
+from .oscal import BackMatter
+from .oscal import Link
+from .oscal import MarkupLine
+from .oscal import MarkupMultiLine
+from .oscal import Metadata
+from .oscal import NCName
+from .oscal import OSCALElement
+from .oscal import Property
+from .oscal import ResponsibleRole
+from .oscal import SetParameter
 
 
 class ComponentTypeEnum(str, Enum):
@@ -47,9 +50,13 @@ class ImplementedRequirement(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
     control_id: str
     description: MarkupMultiLine
+    props: Optional[List[Property]]
+    annotations: Optional[List[Annotation]]
+    links: Optional[List[Link]]
+    responsible_roles: Dict[str, ResponsibleRole] = {}
+    set_parameters: Dict[str, SetParameter] = {}
     statements: Dict[NCName, Statement] = {}
     remarks: Optional[MarkupMultiLine]
-    properties: Optional[List[Property]]
 
     def add_statement(self, statement: Statement):
         key = statement.statement_id
@@ -61,17 +68,31 @@ class ImplementedRequirement(OSCALElement):
         self.statements[NCName(statement.statement_id)] = statement
         return self
 
+    def add_parameter(self, set_parameter: SetParameter):
+        key = set_parameter.param_id
+        if key in self.set_parameters:
+            raise KeyError(
+                f"SetParameter {key} already in ImplementedRequirement"
+                " for {self.control_id}"
+            )
+        self.set_parameters[key] = set_parameter
+        return self
+
     class Config:
-        fields = {"control_id": "control-id"}
+        fields = {
+            "control_id": "control-id",
+            "responsible_roles": "responsible-roles",
+            "set_parameters": "set-parameters",
+        }
         allow_population_by_field_name = True
-        exclude_if_false = ["statements"]
+        exclude_if_false = ["statements", "responsible-roles", "set-parameters"]
 
 
 class ControlImplementation(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
     description: MarkupMultiLine
     source: str
-    properties: Optional[List[Property]]
+    props: Optional[List[Property]]
     implemented_requirements: List[ImplementedRequirement] = []
     links: Optional[List[Link]]
 
@@ -80,9 +101,12 @@ class ControlImplementation(OSCALElement):
         allow_population_by_field_name = True
 
 
+class Protocol(OSCALElement):
+    pass
+
+
 class Component(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
-    name: str
     type: ComponentTypeEnum = ComponentTypeEnum.software
     title: MarkupLine
     description: MarkupMultiLine
@@ -91,11 +115,14 @@ class Component(OSCALElement):
     control_implementations: List[ControlImplementation] = []
     links: Optional[List[Link]]
     annotations: Optional[List[Annotation]]
+    protocols: Optional[List[Protocol]]
+    responsible_roles: Optional[List[ResponsibleRole]]
 
     class Config:
         fields = {
             "component_type": "component-type",
             "control_implementations": "control-implementations",
+            "responsible_roles": "responsible-roles",
         }
         allow_population_by_field_name = True
         container_assigned = ["uuid"]
@@ -106,16 +133,27 @@ class Capability(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
     name: str
     description: MarkupMultiLine
+    control_implementations: Optional[List[ControlImplementation]]
     props: Optional[List[Property]]
     links: Optional[List[Link]]
     annotations: Optional[List[Annotation]]
 
+    class Config:
+        fields = {"control_implementations": "control-implementations"}
+        container_assigned = ["uuid"]
+
+
+class ImportComponentDefinition(OSCALElement):
+    href: str  # really YRI
+
 
 class ComponentDefinition(OSCALElement):
+    uuid: UUID = Field(default_factory=uuid4)
     metadata: Metadata
     components: Dict[str, Component] = {}
     back_matter: Optional[BackMatter]
     capabilities: Dict[str, Capability] = {}
+    import_component_definitions: Optional[List[ImportComponentDefinition]]
 
     def add_component(self, component: Component):
         key = str(component.uuid)
@@ -132,12 +170,15 @@ class ComponentDefinition(OSCALElement):
         return self
 
     class Config:
-        fields = {"back_matter": "back-matter"}
+        fields = {
+            "back_matter": "back-matter",
+            "import_component_definitions": "import-component-definitions",
+        }
         allow_population_by_field_name = True
         exclude_if_false = ["components", "capabilities"]
 
 
-class ComponentRoot(OSCALElement):
+class Model(OSCALElement):
     component_definition: ComponentDefinition
 
     class Config:
@@ -153,16 +194,39 @@ class ComponentRoot(OSCALElement):
         return super().json(by_alias=True, exclude_none=True, **kwargs)
 
 
-class OSCALComponentJson(ComponentRoot):
+class OSCALComponentJson(Model):
     def load(self, f):
-        return ComponentRoot()
+        return Model()
 
     def save_as(self, f):
         pass
 
 
 def main():
-    pass
+    md = Metadata(title="Component", version="1.2.3")
+    cd = ComponentDefinition(metadata=md)
+    c = Component(title="My Component", description="Description of my component")
+    ci = ControlImplementation(description="800-53 controls", source="800-53")
+    ir = ImplementedRequirement(control_id="ac-1", description="AC-1 statements")
+    ir.add_statement(
+        Statement(
+            statement_id="ac-1_smt", description="Refers to AC-1 in its entirety."
+        )
+    )
+    ir.add_statement(
+        Statement(statement_id="ac-1_smt.a", description="Refers to part a of AC-1")
+    )
+    ir.add_statement(
+        Statement(
+            statement_id="ac-1_smt.a.1",
+            description="Refers to item 1 of part a of AC-1",
+        )
+    )
+    ci.implemented_requirements = [ir]
+    c.control_implementations = [ci]
+    cd.add_component(c)
+    root = Model(component_definition=cd)
+    print(root.json(indent=2))
 
 
 if __name__ == "__main__":

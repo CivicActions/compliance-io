@@ -126,6 +126,7 @@ class System(OpenControlElement):
 class Dependency(OpenControlElement):
     url: str
     revision: str
+    contextdir: Optional[str]
 
 
 class OpenControl(OpenControlElement):
@@ -178,10 +179,24 @@ class OpenControl(OpenControlElement):
     def save_as(self, base_dir):
         "Save an OpenControl repo in a new location"
         root = self.dict(exclude={"standards", "components", "systems"})
-        root["certifications"] = [
-            str(cert.storage_path()) for cert in self.certifications
-        ]
-        root["standards"] = [str(std.storage_path()) for std in self.standards.values()]
+        root["certifications"] = []
+        for cert in self.certifications:
+            cert_storage = cert.storage_path(base_dir)
+            cert_storage.parent.mkdir(parents=True, exist_ok=True)
+            with cert_storage.open("w") as cert_file:
+                cert_file.write(rtyaml.dump(cert.dict()))
+                FILE_SIGNAL.send(self, operation="write", path=str(cert_storage))
+                root["certifications"].append(str(cert.storage_path()))
+
+        root["standards"] = []
+        for std in self.standards.values():
+            std_storage = std.storage_path(base_dir)
+            std_storage.parent.mkdir(parents=True, exist_ok=True)
+            with std_storage.open("w") as std_file:
+                std_file.write(rtyaml.dump(std.dict()))
+                FILE_SIGNAL.send(self, operation="write", path=str(std_storage))
+                root["standards"].append(str(std.storage_path()))
+
         root["components"] = [str(c.storage_path()) for c in self.components]
 
         root_storage = self.storage_path(base_dir)
@@ -338,23 +353,5 @@ class OpenControlYaml(BaseModel):
         pass
 
 
-def load(f):
-    p = Path(f)
-    with p.open() as f:
-        root = rtyaml.load(f)
-    oc = OpenControlYaml.parse_obj(root)
-    return oc.resolve(p.parent)
-
-
-def dump(oc, base_dir):
-    base = Path(base_dir)
-    if base.is_dir():
-        root = oc.dict(exclude={"standards", "components", "systems"})
-        root["certifications"] = [
-            str(cert.storage_path(base_dir)) for cert in oc.certifications
-        ]
-        root["standards"] = [
-            str(std.storage_path(base_dir)) for std in oc.standards.values()
-        ]
-        root["components"] = [str(c.storage_path(base_dir)) for c in oc.components]
-        print(rtyaml.dump(root))
+def load(f, debug=False):
+    return OpenControl.load(f, debug)

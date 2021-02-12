@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "compliance-io"
-version = "0.1.0"
+version = "0.1.1-alpha.0"
 description = "Python library for reading/writing compliance as code"
 authors = ["Tom Wood <tom.wood@civicactions.com>"]
 license = "GNU General Public Licence v3"
@@ -13,6 +13,7 @@ pydantic = "^1.7.3"
 python-slugify = "^4.0.1"
 rtyaml = "^1.0.0"
 blinker = "^1.4"
+GitPython = "^3.1.12"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.1"

@@ -14,6 +14,12 @@ from compliance_io.opencontrol import OpenControl
 )
 @click.argument("dest", type=click.File("w"))
 def main(source, dest):
+    """
+    Read the OpenControl repo at SOURCE and write a CSV file
+    containing component narratives aggregated by
+    control.
+    """
+
     oc = OpenControl.load(source)
 
     statements = defaultdict(list)
