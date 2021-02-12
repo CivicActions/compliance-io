@@ -132,7 +132,7 @@ class Dependency(OpenControlElement):
 class OpenControl(OpenControlElement):
     schema_version: str = OPENCONTROL_SCHEMA_VERSION
     name: str
-    metadata: Metadata
+    metadata: Optional[Metadata]
     components: List[Component] = []
     standards: Dict[str, Standard] = {}
     systems: List[System] = []
