@@ -228,7 +228,7 @@ class FenFamily(BaseModel):
 class OpenControlYaml(BaseModel):
     schema_version: str
     name: str
-    metadata: Metadata
+    metadata: Optional[Metadata]
     components: Optional[List[str]]
     certifications: List[str] = []
     standards: List[str] = []
