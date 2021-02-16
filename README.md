@@ -45,15 +45,8 @@ oc.save()
 
 ### OSCAL
 
-```
-from complianceio import oscal
-
-components = oscal.component.load("path/to/components.json")
-print(components.metadata.title)
-
-ssp = oscal.ssp.load("path/to/ssp.json")
-print(ssp.metadata.title)
-```
+API exists for constructing OSCAL documents and serializing them
+to JSON.  See `examples/oc_to_oscal_components.py`.
 
 ## Examples
 
@@ -96,6 +89,16 @@ To run tests,
 ```sh
 poetry run python -m pytest
 ```
+
+To run examples,
+
+```sh
+poetry run python examples/to_csv.py ...
+```
+
+Alternatively, since `poetry install` will use an existing virtualenv
+if activated, you are free to create your own virtualenv manually, run
+`poetry install`, and then behave as usual in a Python virtualenv.
 
 ## License
 
