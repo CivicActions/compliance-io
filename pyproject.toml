@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "complianceio"
-version = "0.1.1-alpha.0"
+version = "0.1.0-alpha.0"
 description = "Python library for reading/writing compliance as code"
 authors = ["Tom Wood <tom.wood@civicactions.com>"]
 license = "GNU General Public Licence v3"

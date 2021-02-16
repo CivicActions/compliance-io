@@ -2,8 +2,14 @@
 
 Python library for reading/writing compliance as code
 
-**Note**: this library should be considered *alpha*.  APIs are subject
-to change.
+**Note**: this library should be considered *alpha*.  All APIs are
+subject to change.
+
+## Installation
+
+```
+pip install -e https://github.com/woodt/compliance-io.git#egg=complianceio
+```
 
 ## Usage
 
@@ -44,6 +50,11 @@ print(ssp.metadata.title)
 
   Write out a CSV file of all controls and statements loaded from an
   OpenControl repository.
+
+* `examples/to_jsonl.py`
+
+  Write out a JSON-L file of all controls and statements loaded from
+  an OpenControl repository.
 
 ## License
 
