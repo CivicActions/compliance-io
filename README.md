@@ -1,14 +1,30 @@
 # compliance-io
 
-Python library for reading/writing compliance as code
+Python library for reading/writing compliance as code:
 
-**Note**: this library should be considered *alpha*.  All APIs are
-subject to change.
+* Read / write OpenControl repositories
+* Serialize OSCAL SSP and component definitions to JSON
+
+Future work will add the abilities to:
+
+* Serialize OSCAL SSP and component definitions to YAML
+* Read OSCAL SSP and component definitions in JSON and YAML formats
+
+**Note**: this library is incomplete and should be considered *alpha*.
+All APIs are subject to change.
 
 ## Installation
 
+Via pip:
+
 ```
-pip install https://github.com/woodt/compliance-io.git#egg=complianceio
+pip install git+https://github.com/woodt/compliance-io.git@main#egg=complianceio
+```
+
+Via poetry:
+
+```
+poetry add git git+https://github.com/woodt/compliance-io.git#main
 ```
 
 ## Usage
@@ -63,6 +79,8 @@ print(ssp.metadata.title)
 
 ## Development
 
+Note that the branch of "truth" in this repo is called *main*.
+
 This library uses [poetry](https://python-poetry.org/) to maintain
 dependencies.  If you don't have Poetry installed, follow the
 [installation instructions](https://python-poetry.org/docs/).
@@ -81,8 +99,6 @@ poetry run python -m pytest
 
 ## License
 
-GNU General Public License v3.0 or later. Some portions of this work
-were produced under a Government contract and are licensed under the
-terms of Creative Commons Zero v1.0 Universal.
+GNU General Public License v3.0 or later.
 
 SPDX-License-Identifier: `GPL-3.0-or-later`
