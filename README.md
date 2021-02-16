@@ -8,7 +8,7 @@ subject to change.
 ## Installation
 
 ```
-pip install -e https://github.com/woodt/compliance-io.git#egg=complianceio
+pip install https://github.com/woodt/compliance-io.git#egg=complianceio
 ```
 
 ## Usage
@@ -41,6 +41,11 @@ print(ssp.metadata.title)
 
 ## Examples
 
+* `examples/oc_to_oscal_components.py`
+
+  Take an OpenControl repository and extract the components
+  as a JSON OSCAL component definition.
+
 * `examples/defenestrate.py`
 
   Take an OpenControl repository that might be in "Fen" format and
@@ -55,6 +60,24 @@ print(ssp.metadata.title)
 
   Write out a JSON-L file of all controls and statements loaded from
   an OpenControl repository.
+
+## Development
+
+This library uses [poetry](https://python-poetry.org/) to maintain
+dependencies.  If you don't have Poetry installed, follow the
+[installation instructions](https://python-poetry.org/docs/).
+
+To install this package for development,
+
+```sh
+poetry install
+```
+
+To run tests,
+
+```sh
+poetry run python -m pytest
+```
 
 ## License
 
