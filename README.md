@@ -2,12 +2,15 @@
 
 Python library for reading/writing compliance as code
 
+**Note**: this library should be considered *alpha*.  APIs are subject
+to change.
+
 ## Usage
 
 ### OpenControl
 
 ```
-from compliance_io import opencontrol
+from complianceio import opencontrol
 
 oc = opencontrol.load("path/to/opencontrol.yaml")
 print(oc.name)
@@ -21,7 +24,7 @@ oc.save()
 ### OSCAL
 
 ```
-from compliance_io import oscal
+from complianceio import oscal
 
 components = oscal.component.load("path/to/components.json")
 print(components.metadata.title)
@@ -41,3 +44,11 @@ print(ssp.metadata.title)
 
   Write out a CSV file of all controls and statements loaded from an
   OpenControl repository.
+
+## License
+
+GNU General Public License v3.0 or later. Some portions of this work
+were produced under a Government contract and are licensed under the
+terms of Creative Commons Zero v1.0 Universal.
+
+SPDX-License-Identifier: `GPL-3.0-or-later`

@@ -4,7 +4,7 @@ from itertools import groupby
 
 import click
 
-from compliance_io.opencontrol import OpenControl
+from complianceio.opencontrol import OpenControl
 
 
 @click.command()

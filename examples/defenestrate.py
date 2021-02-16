@@ -1,6 +1,6 @@
 import click
 
-from compliance_io import opencontrol
+from complianceio import opencontrol
 
 
 @click.command()

@@ -1,6 +1,6 @@
-from compliance_io.oscal import component
-from compliance_io.oscal.oscal import Metadata
-from compliance_io.oscal.oscal import oscalize_control_id
+from complianceio.oscal import component
+from complianceio.oscal.oscal import Metadata
+from complianceio.oscal.oscal import oscalize_control_id
 
 
 def test_component():
