@@ -18,13 +18,13 @@ All APIs are subject to change.
 Via pip:
 
 ```
-pip install git+https://github.com/woodt/compliance-io.git@main#egg=complianceio
+pip install git+https://github.com/CivicActions/compliance-io.git@main#egg=complianceio
 ```
 
 Via poetry:
 
 ```
-poetry add git git+https://github.com/woodt/compliance-io.git#main
+poetry add git git+https://github.com/CivicActions/compliance-io.git#main
 ```
 
 ## Usage
