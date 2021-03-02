@@ -1,3 +1,7 @@
+"""
+This module provides classes to read, write, and create
+OpenControl repositories.
+"""
 from enum import Enum
 from pathlib import Path
 from typing import Dict
@@ -55,10 +59,16 @@ class ImplementationStatusEnum(str, Enum):
     none = "none"
 
 
+class CoveredBy(OpenControlElement):
+    verification_key: str
+    system_key: Optional[str]
+    component_key: Optional[str]
+
+
 class Control(OpenControlElement):
     control_key: str
     standard_key: str
-    covered_by: Optional[List[str]]  # TODO (what?)
+    covered_by: Optional[List[CoveredBy]]
     narrative: Optional[List[Statement]]
     references: Optional[List[Reference]]
     implementation_statuses: Optional[Set[ImplementationStatusEnum]]
@@ -72,6 +82,16 @@ class Metadata(OpenControlElement):
     maintainers: Optional[List[str]]
 
 
+class Verification(OpenControlElement):
+    key: str
+    name: str
+    type: str
+    path: Optional[str]
+    description: Optional[str]
+    test_passed: Optional[bool]
+    last_run: Optional[str]
+
+
 class Component(OpenControlElement):
     schema_version: str = COMPONENT_SCHEMA_VERSION
     name: str
@@ -80,7 +100,9 @@ class Component(OpenControlElement):
     documentation_complete: Optional[bool]
     responsible_role: Optional[str]
     references: Optional[List[Reference]]
+    verifications: Optional[List[Verification]]
     satisfies: Optional[List[Control]]
+
     _file: str = PrivateAttr()
 
     def new_relative_path(self):
@@ -130,6 +152,10 @@ class Dependency(OpenControlElement):
 
 
 class OpenControl(OpenControlElement):
+    """
+    Container for OpenControl repository.
+    """
+
     schema_version: str = OPENCONTROL_SCHEMA_VERSION
     name: str
     metadata: Optional[Metadata]
@@ -151,8 +177,13 @@ class OpenControl(OpenControlElement):
         )
 
     @classmethod
-    def load(cls, f, debug=True):
-        p = Path(f)
+    def load(cls, path: str, debug=True):
+        """
+        Load an OpenControl repository from a path to the
+        `opencontrol.yaml` file.
+        """
+
+        p = Path(path)
         if debug:
             FILE_SIGNAL.connect(OpenControl.debug_file)
 
