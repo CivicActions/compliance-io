@@ -26,8 +26,13 @@ jobs:
         with:
           poetry-version: 1.1.4
 
-      - name: View poetry --help
-        run: poetry --help
+      - name: Install dependencies
+        run:
+          poetry install --dev
+
+      - name: Run tests
+        run: |
+          pytest
 
       - name: Build
         run: poetry build
