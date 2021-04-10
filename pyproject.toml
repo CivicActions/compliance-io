@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "complianceio"
-version = "0.1.0-alpha.0"
+version = "0.1.0-alpha.1"
 description = "Python library for reading/writing compliance as code"
 authors = ["Tom Wood <tom.wood@civicactions.com>"]
 license = "GNU General Public Licence v3"
@@ -19,6 +19,14 @@ GitPython = "^3.1.12"
 pytest = "^6.2.1"
 pre-commit = "^2.9.3"
 flake8 = "^3.8.4"
+attribution = "^1.5.2"
+
+
+[tool.attribution]
+name = "compliance-io"
+package = "complianceio"
+signed_tags = false
+version_file = false
 
 [build-system]
 requires = ["setuptools", "poetry-core>=1.0.0"]
