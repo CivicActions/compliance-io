@@ -1,0 +1,38 @@
+name: Build
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  pull_request:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2.1.0
+        with:
+          poetry-version: 1.1.4
+
+      - name: Install dependencies
+        run:
+          poetry install
+
+      - name: Run tests
+        run: |
+          poetry run pytest
+
+      - name: Build
+        run: poetry build

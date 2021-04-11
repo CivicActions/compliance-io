@@ -100,6 +100,19 @@ Alternatively, since `poetry install` will use an existing virtualenv
 if activated, you are free to create your own virtualenv manually, run
 `poetry install`, and then behave as usual in a Python virtualenv.
 
+## Release process
+
+Use `poetry version` to bump the version number.  E.g.,
+
+```sh
+poetry version patch
+```
+
+Use `poetry run attribution tag VERSION` to tag the release and
+generate the CHANGELOG.md file.
+
+Push to GitHub and merge to `main`.
+
 ## License
 
 GNU General Public License v3.0 or later.
