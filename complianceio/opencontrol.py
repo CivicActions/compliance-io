@@ -4,6 +4,7 @@ OpenControl repositories.
 """
 from enum import Enum
 from pathlib import Path
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -89,7 +90,7 @@ class Verification(OpenControlElement):
     path: Optional[str]
     description: Optional[str]
     test_passed: Optional[bool]
-    last_run: Optional[str]
+    last_run: Any  # optional (because of Any)
 
 
 class Component(OpenControlElement):
@@ -172,7 +173,7 @@ class OpenControl(OpenControlElement):
     @classmethod
     def debug_file(cls, sender, **kwargs):
         print(
-            "Loaded file" if kwargs["operation"] == "read" else "Wrote file",
+            "Loading file" if kwargs["operation"] == "read" else "Writing file",
             kwargs["path"],
         )
 
@@ -188,8 +189,8 @@ class OpenControl(OpenControlElement):
             FILE_SIGNAL.connect(OpenControl.debug_file)
 
         with p.open() as f:
-            root = rtyaml.load(f)
             FILE_SIGNAL.send(cls, operation="read", path=p)
+            root = rtyaml.load(f)
             oc = OpenControlYaml.parse_obj(root).resolve(p.parent)
             oc._root_dir = p.parent
             return oc
@@ -216,7 +217,7 @@ class OpenControl(OpenControlElement):
             cert_storage.parent.mkdir(parents=True, exist_ok=True)
             with cert_storage.open("w") as cert_file:
                 cert_file.write(rtyaml.dump(cert.dict()))
-                FILE_SIGNAL.send(self, operation="write", path=str(cert_storage))
+                FILE_SIGNAL.send(self, operation="write", path=cert_storage)
                 root["certifications"].append(str(cert.storage_path()))
 
         root["standards"] = []
@@ -225,7 +226,7 @@ class OpenControl(OpenControlElement):
             std_storage.parent.mkdir(parents=True, exist_ok=True)
             with std_storage.open("w") as std_file:
                 std_file.write(rtyaml.dump(std.dict()))
-                FILE_SIGNAL.send(self, operation="write", path=str(std_storage))
+                FILE_SIGNAL.send(self, operation="write", path=std_storage)
                 root["standards"].append(str(std.storage_path()))
 
         root["components"] = [str(c.storage_path()) for c in self.components]
@@ -311,6 +312,7 @@ class OpenControlYaml(BaseModel):
         for satisfier in fc.satisfies:
             satisfier_path = component_path.parent / satisfier
             if satisfier_path.is_file():
+                FILE_SIGNAL.send(self, operation="read", path=satisfier_path)
                 with satisfier_path.open() as f:
                     obj = rtyaml.load(f)
                     family = FenFamily.parse_obj(obj)
@@ -326,6 +328,7 @@ class OpenControlYaml(BaseModel):
         return c
 
     def resolve_component(self, component_path):
+        FILE_SIGNAL.send(self, operation="read", path=component_path)
         with component_path.open() as f:
             obj = rtyaml.load(f)
             if self._is_fen(obj):
@@ -339,9 +342,9 @@ class OpenControlYaml(BaseModel):
         for certification in self.certifications:
             certification_path = relative_to / certification
             if certification_path.is_file():
+                FILE_SIGNAL.send(self, operation="read", path=certification_path)
                 with certification_path.open() as f:
                     obj = rtyaml.load(f)
-                    FILE_SIGNAL.send(self, operation="read", path=certification_path)
                     cert = Certification.parse_obj(obj)
                     cert._file = certification
                     certifications.append(cert)
@@ -355,9 +358,9 @@ class OpenControlYaml(BaseModel):
         for standard in self.standards:
             standard_path = relative_to / standard
             if standard_path.is_file():
+                FILE_SIGNAL.send(self, operation="read", path=standard_path)
                 with standard_path.open() as f:
                     obj = rtyaml.load(f)
-                    FILE_SIGNAL.send(self, operation="read", path=standard_path)
                     name = obj.pop("name")
 
                     # TODO: source and license are not in the spec?
