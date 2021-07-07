@@ -16,7 +16,7 @@ from uuid import uuid4
 from pydantic import BaseModel
 from pydantic import Field
 
-OSCAL_VERSION = "1.0.0-RC1"
+OSCAL_VERSION = "1.0.0"
 
 
 class ControlRegExps:
