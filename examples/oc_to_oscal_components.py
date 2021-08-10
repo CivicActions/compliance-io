@@ -23,6 +23,7 @@ def main(source):
 
     md = Metadata(title=oc.name, version="unknown")
     cd = component.ComponentDefinition(metadata=md)
+    cd.components = []
     for o_comp in oc.components:
         c = component.Component(title=o_comp.name, description=o_comp.name)
         c.control_implementations = []
@@ -53,7 +54,7 @@ def main(source):
                     )
                 ci.implemented_requirements.append(ir)
             c.control_implementations.append(ci)
-        cd.add_component(c)
+        cd.components.append(c)
     root = component.Model(component_definition=cd)
     print(root.json(indent=2))
 

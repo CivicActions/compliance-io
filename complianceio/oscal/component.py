@@ -42,8 +42,8 @@ class Statement(OSCALElement):
     remarks: Optional[MarkupMultiLine]
     links: Optional[List[Link]]
 
-    class Config:
-        container_assigned = ["statement_id"]
+#    class Config:
+#        container_assigned = ["statement_id"]
 
 
 class ImplementedRequirement(OSCALElement):
@@ -55,7 +55,7 @@ class ImplementedRequirement(OSCALElement):
     links: Optional[List[Link]]
     responsible_roles: Dict[str, ResponsibleRole] = {}
     set_parameters: Dict[str, SetParameter] = {}
-    statements: Dict[NCName, Statement] = {}
+    statements: List[Statement] = []
     remarks: Optional[MarkupMultiLine]
 
     def add_statement(self, statement: Statement):
@@ -65,7 +65,7 @@ class ImplementedRequirement(OSCALElement):
                 f"Statement {key} already in ImplementedRequirement"
                 " for {self.control_id}"
             )
-        self.statements[NCName(statement.statement_id)] = statement
+        self.statements.append(statement)
         return self
 
     def add_parameter(self, set_parameter: SetParameter):
@@ -125,7 +125,6 @@ class Component(OSCALElement):
             "responsible_roles": "responsible-roles",
         }
         allow_population_by_field_name = True
-        container_assigned = ["uuid"]
         exclude_if_false = ["control-implementations"]
 
 
@@ -150,7 +149,7 @@ class ImportComponentDefinition(OSCALElement):
 class ComponentDefinition(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
     metadata: Metadata
-    components: Dict[str, Component] = {}
+    components: List[Component] = []
     back_matter: Optional[BackMatter]
     capabilities: Dict[str, Capability] = {}
     import_component_definitions: Optional[List[ImportComponentDefinition]]
