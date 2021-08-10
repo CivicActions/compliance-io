@@ -42,6 +42,10 @@ class Statement(OSCALElement):
     remarks: Optional[MarkupMultiLine]
     links: Optional[List[Link]]
 
+    class Config:
+        fields = {"statement_id": "statement-id"}
+        allow_population_by_field_name = True
+
 
 class ImplementedRequirement(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
