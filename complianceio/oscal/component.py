@@ -42,9 +42,6 @@ class Statement(OSCALElement):
     remarks: Optional[MarkupMultiLine]
     links: Optional[List[Link]]
 
-#    class Config:
-#        container_assigned = ["statement_id"]
-
 
 class ImplementedRequirement(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
@@ -139,7 +136,6 @@ class Capability(OSCALElement):
 
     class Config:
         fields = {"control_implementations": "control-implementations"}
-        container_assigned = ["uuid"]
 
 
 class ImportComponentDefinition(OSCALElement):
@@ -151,21 +147,21 @@ class ComponentDefinition(OSCALElement):
     metadata: Metadata
     components: List[Component] = []
     back_matter: Optional[BackMatter]
-    capabilities: Dict[str, Capability] = {}
+    capabilities: List[Capability] = []
     import_component_definitions: Optional[List[ImportComponentDefinition]]
 
     def add_component(self, component: Component):
         key = str(component.uuid)
         if key in self.components:
             raise KeyError(f"Component {key} already in ComponentDefinition")
-        self.components[str(component.uuid)] = component
+        self.components.append(component)
         return self
 
     def add_capability(self, capability: Capability):
         key = str(capability.uuid)
         if key in self.capabilities:
             raise KeyError(f"Capability {key} already in ComponentDefinition")
-        self.capabilities[str(capability.uuid)] = capability
+        self.capabilities.append(capability)
         return self
 
     class Config:

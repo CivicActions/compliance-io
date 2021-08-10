@@ -54,7 +54,7 @@ def main(source):
                     )
                 ci.implemented_requirements.append(ir)
             c.control_implementations.append(ci)
-        cd.components.append(c)
+        cd.add_component(c)
     root = component.Model(component_definition=cd)
     print(root.json(indent=2))
 
