@@ -143,7 +143,7 @@ class Capability(OSCALElement):
 
 
 class ImportComponentDefinition(OSCALElement):
-    href: str  # really YRI
+    href: str  # really uri-reference
 
 
 class ComponentDefinition(OSCALElement):
