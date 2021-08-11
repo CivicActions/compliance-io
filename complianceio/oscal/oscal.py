@@ -141,7 +141,7 @@ class OSCALElement(BaseModel):
                     del d[key]
         if hasattr(self.Config, "exclude_if_false"):
             for key in self.Config.exclude_if_false:
-                if not d.get(key, False):
+                if not d.get(key, False) and key in d:
                     del d[key]
         return d
 
