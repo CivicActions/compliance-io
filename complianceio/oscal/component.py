@@ -149,9 +149,9 @@ class ImportComponentDefinition(OSCALElement):
 class ComponentDefinition(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
     metadata: Metadata
-    components: List[Component] = []
+    components: Optional[List[Component]]
     back_matter: Optional[BackMatter]
-    capabilities: List[Capability] = []
+    capabilities: Optional[List[Capability]]
     import_component_definitions: Optional[List[ImportComponentDefinition]]
 
     def add_component(self, component: Component):
