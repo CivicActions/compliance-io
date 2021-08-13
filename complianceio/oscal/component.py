@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Dict
 from typing import List
 from typing import Optional
 from uuid import UUID
@@ -7,7 +6,6 @@ from uuid import uuid4
 
 from pydantic import Field
 
-from .oscal import Annotation
 from .oscal import BackMatter
 from .oscal import Link
 from .oscal import MarkupLine
@@ -38,9 +36,10 @@ class Statement(OSCALElement):
     statement_id: Optional[NCName]
     uuid: UUID = Field(default_factory=uuid4)
     description: MarkupMultiLine = MarkupMultiLine("")
-    properties: Optional[List[Property]]
-    remarks: Optional[MarkupMultiLine]
+    props: Optional[List[Property]]
     links: Optional[List[Link]]
+    responsible_roles: Optional[List[ResponsibleRole]]
+    remarks: Optional[MarkupMultiLine]
 
     class Config:
         fields = {"statement_id": "statement-id"}
@@ -52,16 +51,17 @@ class ImplementedRequirement(OSCALElement):
     control_id: str
     description: MarkupMultiLine
     props: Optional[List[Property]]
-    annotations: Optional[List[Annotation]]
     links: Optional[List[Link]]
-    responsible_roles: Dict[str, ResponsibleRole] = {}
-    set_parameters: Dict[str, SetParameter] = {}
-    statements: List[Statement] = []
+    set_parameters: Optional[List[SetParameter]]
+    responsible_roles: Optional[List[ResponsibleRole]]
+    statements: Optional[List[Statement]]
     remarks: Optional[MarkupMultiLine]
 
     def add_statement(self, statement: Statement):
         key = statement.statement_id
-        if key in self.statements:
+        if not self.statements:
+            self.statements = []
+        elif key in self.statements:
             raise KeyError(
                 f"Statement {key} already in ImplementedRequirement"
                 " for {self.control_id}"
@@ -91,11 +91,11 @@ class ImplementedRequirement(OSCALElement):
 
 class ControlImplementation(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
-    description: MarkupMultiLine
     source: str
+    description: MarkupMultiLine
     props: Optional[List[Property]]
-    implemented_requirements: List[ImplementedRequirement] = []
     links: Optional[List[Link]]
+    implemented_requirements: List[ImplementedRequirement] = []
 
     class Config:
         fields = {"implemented_requirements": "implemented-requirements"}
@@ -113,11 +113,11 @@ class Component(OSCALElement):
     description: MarkupMultiLine
     purpose: Optional[MarkupLine]
     props: Optional[List[Property]]
-    control_implementations: List[ControlImplementation] = []
     links: Optional[List[Link]]
-    annotations: Optional[List[Annotation]]
-    protocols: Optional[List[Protocol]]
     responsible_roles: Optional[List[ResponsibleRole]]
+    protocols: Optional[List[Protocol]]
+    control_implementations: List[ControlImplementation] = []
+    remarks: Optional[MarkupMultiLine]
 
     class Config:
         fields = {
@@ -129,17 +129,26 @@ class Component(OSCALElement):
         exclude_if_false = ["control-implementations"]
 
 
+class IncorporatesComponent(OSCALElement):
+    component_uuid: UUID
+    description: str
+
+    class Config:
+        fields = {"component_uuid": "component-uuid"}
+
+
 class Capability(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
     name: str
     description: MarkupMultiLine
-    control_implementations: Optional[List[ControlImplementation]]
     props: Optional[List[Property]]
     links: Optional[List[Link]]
-    annotations: Optional[List[Annotation]]
+    control_implementations: Optional[List[ControlImplementation]]
+    incorporates_components: Optional[List[IncorporatesComponent]]
 
     class Config:
-        fields = {"control_implementations": "control-implementations"}
+        fields = {"control_implementations": "control-implementations",
+                  "incorporates_components": "incorporates-components"}
 
 
 class ImportComponentDefinition(OSCALElement):
@@ -159,7 +168,7 @@ class ComponentDefinition(OSCALElement):
         # initialize optional component list
         if not self.components:
             self.components = []
-        if key in self.components:
+        elif key in self.components:
             raise KeyError(f"Component {key} already in ComponentDefinition")
         self.components.append(component)
         return self
@@ -169,7 +178,7 @@ class ComponentDefinition(OSCALElement):
         # initialize optional capability list
         if not self.capabilities:
             self.capabilities = []
-        if key in self.capabilities:
+        elif key in self.capabilities:
             raise KeyError(f"Capability {key} already in ComponentDefinition")
         self.capabilities.append(capability)
         return self
