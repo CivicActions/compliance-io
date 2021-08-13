@@ -156,6 +156,9 @@ class ComponentDefinition(OSCALElement):
 
     def add_component(self, component: Component):
         key = str(component.uuid)
+        # initialize optional component list
+        if not self.components:
+            self.components = []
         if key in self.components:
             raise KeyError(f"Component {key} already in ComponentDefinition")
         self.components.append(component)
@@ -163,6 +166,9 @@ class ComponentDefinition(OSCALElement):
 
     def add_capability(self, capability: Capability):
         key = str(capability.uuid)
+        # initialize optional capability list
+        if not self.capabilities:
+            self.capabilities = []
         if key in self.capabilities:
             raise KeyError(f"Capability {key} already in ComponentDefinition")
         self.capabilities.append(capability)
