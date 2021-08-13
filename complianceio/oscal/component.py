@@ -1,3 +1,6 @@
+# Define OSCAL Component using Component Definition Model v1.0.0
+# https://pages.nist.gov/OSCAL/reference/1.0.0/component-definition/json-outline/
+
 from enum import Enum
 from typing import List
 from typing import Optional

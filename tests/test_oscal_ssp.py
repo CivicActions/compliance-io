@@ -3,7 +3,7 @@ from complianceio.oscal.oscal import Metadata
 from complianceio.oscal.oscal import Party
 from complianceio.oscal.oscal import Resource
 from complianceio.oscal.oscal import Role
-from complianceio.oscal.ssp import AuthorizationBoundary
+from complianceio.oscal.ssp import NetworkDiagram
 from complianceio.oscal.ssp import ByComponent
 from complianceio.oscal.ssp import Component
 from complianceio.oscal.ssp import ControlImplementation
@@ -45,7 +45,7 @@ def test_ssp():
         availability_impact=Impact(base="low"),
     )
     sinfo = SystemInformation(information_types=[itype])
-    ab = AuthorizationBoundary(description="Authorization Boundary")
+    ab = NetworkDiagram(description="Authorization Boundary")
     sc = SystemCharacteristics(
         system_name="ODP",
         description="ODP Description",
