@@ -330,8 +330,8 @@ class SetParameter(OSCALElement):
     remarks: Optional[MarkupMultiLine]
 
     class Config:
+        fields = {"param_id": "param-id"}
         allow_population_by_field_name = True
-        container_assigned = ["param_id"]
 
 
 class ResponsibleRole(OSCALElement):

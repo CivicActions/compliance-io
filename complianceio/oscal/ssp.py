@@ -1,5 +1,6 @@
 # Define OSCAL SSP using System Security Plan Model v1.0.0
 # https://pages.nist.gov/OSCAL/reference/1.0.0/system-security-plan/json-outline/
+
 from datetime import datetime
 from typing import List
 from typing import Optional
@@ -56,13 +57,13 @@ class InformationType(OSCALElement):
     categorizations: Optional[List[Categorization]]
     props: Optional[List[Property]]
     links: Optional[List[Link]]
-    confidential_impact: Impact
+    confidentiality_impact: Impact
     integrity_impact: Impact
     availability_impact: Impact
 
     class Config:
         fields = {
-            "confidential_impact": "confidential-impact",
+            "confidentiality_impact": "confidentiality-impact",
             "integrity_impact": "integrity-impact",
             "availability_impact": "availability-impact",
         }
@@ -122,12 +123,21 @@ class SecurityImpactLevel(OSCALElement):
         allow_population_by_field_name = True
 
 
+class SystemId(OSCALElement):
+    identifier_type: Optional[str]  # really URI
+    id: Optional[str]
+
+    class Config:
+        fields = {"identifier_type": "identifier-type"}
+        allow_population_by_field_name = True
+
 class SystemStatus(OSCALElement):
     state: NCName
     remarks: Optional[MarkupMultiLine]
 
 
 class SystemCharacteristics(OSCALElement):
+    system_ids: List[SystemId] = []
     system_name: str
     system_name_short: Optional[str]
     description: MarkupMultiLine
@@ -146,11 +156,12 @@ class SystemCharacteristics(OSCALElement):
 
     class Config:
         fields = {
+            "system_ids": "system-ids",
+            "system_name": "system-name",
+            "system_name_short": "system-name-short",
             "authorization_boundary": "authorization-boundary",
             "network_architecture": "network-architecture",
             "data_flow": "data-flow",
-            "system_name": "system-name",
-            "system_name_short": "system-name-short",
             "security_sensitivity_level": "security-sensitivity-level",
             "security_impact_level": "security-impact-level",
             "system_information": "system-information",
@@ -174,9 +185,9 @@ class User(OSCALElement):
     class Config:
         fields = {
             "authorized_privileges": "authorized-privileges",
+            "short_name": "short-name",
             "role_ids": "role-ids",
         }
-        container_assigned = ["uuid"]
         allow_population_by_field_name = True
 
 
@@ -199,7 +210,6 @@ class Component(OSCALElement):
 
     class Config:
         fields = {"responsible_roles": "responsible-roles"}
-        container_assigned = ["uuid"]
         allow_population_by_field_name = True
         exclude_if_false = ["responsible-roles"]
 
@@ -372,7 +382,6 @@ class ByComponent(OSCALElement):
             "implementation_status": "implementation-status",
             "responsible_roles": "responsible-roles",
         }
-        container_assigned = ["component-uuid"]
         allow_population_by_field_name = True
         exclude_if_false = ["responsible-roles"]
 
@@ -397,10 +406,12 @@ class Statement(OSCALElement):
 
     class Config:
         fields = {
+            "statement_id": "statement-id",
             "responsible_roles": "responsible-roles",
-            "by_components": "by-components",
+            "by_components": "by-components"
         }
         exclude_if_false = ["by-components"]
+        allow_population_by_field_name = True
 
 
 class ImplementedRequirement(OSCALElement):
@@ -449,6 +460,7 @@ class ImplementedRequirement(OSCALElement):
 
     class Config:
         fields = {
+            "control_id": "control-id",
             "by_components": "by-components",
             "set_parameters": "set-parameters",
             "responsible_roles": "responsible-roles",

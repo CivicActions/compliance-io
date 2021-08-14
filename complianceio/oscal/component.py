@@ -35,7 +35,7 @@ class ComponentTypeEnum(str, Enum):
 
 
 class Statement(OSCALElement):
-    statement_id: Optional[NCName]
+    statement_id: NCName
     uuid: UUID = Field(default_factory=uuid4)
     description: MarkupMultiLine = MarkupMultiLine("")
     props: Optional[List[Property]]
@@ -44,7 +44,8 @@ class Statement(OSCALElement):
     remarks: Optional[MarkupMultiLine]
 
     class Config:
-        fields = {"statement_id": "statement-id"}
+        fields = {"statement_id": "statement-id",
+                  "responsible_roles": "responsible-roles"}
         allow_population_by_field_name = True
 
 
