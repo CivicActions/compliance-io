@@ -15,8 +15,8 @@ from complianceio.oscal.ssp import NetworkDiagram
 from complianceio.oscal.ssp import SecurityImpactLevel
 from complianceio.oscal.ssp import SetParameter
 from complianceio.oscal.ssp import Statement
-from complianceio.oscal.ssp import SystemId
 from complianceio.oscal.ssp import SystemCharacteristics
+from complianceio.oscal.ssp import SystemId
 from complianceio.oscal.ssp import SystemImplementation
 from complianceio.oscal.ssp import SystemInformation
 from complianceio.oscal.ssp import SystemSecurityPlan

@@ -44,8 +44,10 @@ class Statement(OSCALElement):
     remarks: Optional[MarkupMultiLine]
 
     class Config:
-        fields = {"statement_id": "statement-id",
-                  "responsible_roles": "responsible-roles"}
+        fields = {
+            "statement_id": "statement-id",
+            "responsible_roles": "responsible-roles",
+        }
         allow_population_by_field_name = True
 
 

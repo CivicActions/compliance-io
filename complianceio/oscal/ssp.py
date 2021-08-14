@@ -1,6 +1,5 @@
 # Define OSCAL SSP using System Security Plan Model v1.0.0
 # https://pages.nist.gov/OSCAL/reference/1.0.0/system-security-plan/json-outline/
-
 from datetime import datetime
 from typing import List
 from typing import Optional
@@ -130,6 +129,7 @@ class SystemId(OSCALElement):
     class Config:
         fields = {"identifier_type": "identifier-type"}
         allow_population_by_field_name = True
+
 
 class SystemStatus(OSCALElement):
     state: NCName
@@ -408,7 +408,7 @@ class Statement(OSCALElement):
         fields = {
             "statement_id": "statement-id",
             "responsible_roles": "responsible-roles",
-            "by_components": "by-components"
+            "by_components": "by-components",
         }
         exclude_if_false = ["by-components"]
         allow_population_by_field_name = True
