@@ -1,8 +1,6 @@
 # Define OSCAL SSP using System Security Plan Model v1.0.0
 # https://pages.nist.gov/OSCAL/reference/1.0.0/system-security-plan/json-outline/
-
 from datetime import datetime
-from typing import Dict
 from typing import List
 from typing import Optional
 from uuid import UUID
@@ -21,9 +19,9 @@ from .oscal import OSCALElement
 from .oscal import Party
 from .oscal import Property
 from .oscal import Resource
-from .oscal import Role
-from .oscal import ResponsibleRole
 from .oscal import ResponsibleParty
+from .oscal import ResponsibleRole
+from .oscal import Role
 from .oscal import SetParameter
 
 
@@ -156,7 +154,7 @@ class SystemCharacteristics(OSCALElement):
             "security_sensitivity_level": "security-sensitivity-level",
             "security_impact_level": "security-impact-level",
             "system_information": "system-information",
-            "responsible_parties": "responsible-parties"
+            "responsible_parties": "responsible-parties",
         }
         allow_population_by_field_name = True
 
@@ -216,7 +214,7 @@ class ImplementedComponent(OSCALElement):
     class Config:
         fields = {
             "component_uuid": "component-uuid",
-            "responsible_parties": "responsible-parties"
+            "responsible_parties": "responsible-parties",
         }
 
 
@@ -230,8 +228,7 @@ class LeveragedAuthorization(OSCALElement):
     remarks: Optional[MarkupMultiLine]
 
     class Config:
-        fields = {"party_uuid": "party-uuid",
-                  "date_authorized": "date-authorized"}
+        fields = {"party_uuid": "party-uuid", "date_authorized": "date-authorized"}
 
 
 class InventoryItem(OSCALElement):
@@ -244,8 +241,10 @@ class InventoryItem(OSCALElement):
     remarks: Optional[MarkupMultiLine]
 
     class Config:
-        fields = {"responsible_parties": "responsible-parties",
-                  "implemented_components": "implemented-components"}
+        fields = {
+            "responsible_parties": "responsible-parties",
+            "implemented_components": "implemented-components",
+        }
 
 
 class SystemImplementation(OSCALElement):
@@ -298,8 +297,10 @@ class Responsibility(OSCALElement):
     remarks: Optional[MarkupMultiLine]
 
     class Config:
-        fields = {"provided_uuid": "provided-uuid",
-                  "responsible_roles": "responsible-roles"}
+        fields = {
+            "provided_uuid": "provided-uuid",
+            "responsible_roles": "responsible-roles",
+        }
         exclude_if_false = ["responsible-roles"]
 
 
@@ -326,8 +327,10 @@ class Inherited(OSCALElement):
     responsible_roles: Optional[List[ResponsibleRole]]
 
     class Config:
-        fields = {"provided_uuid": "provided-uuid",
-                  "responsible_roles": "responsible-roles"}
+        fields = {
+            "provided_uuid": "provided-uuid",
+            "responsible_roles": "responsible-roles",
+        }
         exclude_if_false = ["responsible-roles"]
 
 
@@ -341,8 +344,10 @@ class Satisfied(OSCALElement):
     remarks: Optional[MarkupMultiLine]
 
     class Config:
-        fields = {"responsibility_uuid": "responsibility-uuid",
-                  "responsible_roles": "responsible-roles"}
+        fields = {
+            "responsibility_uuid": "responsibility-uuid",
+            "responsible_roles": "responsible-roles",
+        }
         exclude_if_false = ["responsible-roles"]
 
 
@@ -391,8 +396,10 @@ class Statement(OSCALElement):
         return self
 
     class Config:
-        fields = {"responsible_roles": "responsible-roles",
-                  "by_components": "by-components"}
+        fields = {
+            "responsible_roles": "responsible-roles",
+            "by_components": "by-components",
+        }
         exclude_if_false = ["by-components"]
 
 
@@ -456,8 +463,10 @@ class ControlImplementation(OSCALElement):
     implemented_requirements: List[ImplementedRequirement]
 
     class Config:
-        fields = {"implemented_requirements": "implemented-requirements",
-                  "set_parameters": "set-parameters"}
+        fields = {
+            "implemented_requirements": "implemented-requirements",
+            "set_parameters": "set-parameters",
+        }
         allow_population_by_field_name = True
 
 
@@ -520,7 +529,8 @@ def main():
         availability_impact=Impact(base="low"),
     )
     sinfo = SystemInformation(information_types=[itype])
-    ab = AuthorizationBoundary(description="Authorization Boundary")
+
+    ab = NetworkDiagram(description="Authorization Boundary")
     sc = SystemCharacteristics(
         system_name="ODP",
         description="ODP Description",

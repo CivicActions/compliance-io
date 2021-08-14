@@ -3,7 +3,6 @@ from complianceio.oscal.oscal import Metadata
 from complianceio.oscal.oscal import Party
 from complianceio.oscal.oscal import Resource
 from complianceio.oscal.oscal import Role
-from complianceio.oscal.ssp import NetworkDiagram
 from complianceio.oscal.ssp import ByComponent
 from complianceio.oscal.ssp import Component
 from complianceio.oscal.ssp import ControlImplementation
@@ -12,6 +11,7 @@ from complianceio.oscal.ssp import ImplementedRequirement
 from complianceio.oscal.ssp import ImportProfile
 from complianceio.oscal.ssp import InformationType
 from complianceio.oscal.ssp import Model
+from complianceio.oscal.ssp import NetworkDiagram
 from complianceio.oscal.ssp import SecurityImpactLevel
 from complianceio.oscal.ssp import SetParameter
 from complianceio.oscal.ssp import Statement

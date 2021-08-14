@@ -1,6 +1,5 @@
 # Define OSCAL Component using Component Definition Model v1.0.0
 # https://pages.nist.gov/OSCAL/reference/1.0.0/component-definition/json-outline/
-
 from enum import Enum
 from typing import List
 from typing import Optional
@@ -150,8 +149,10 @@ class Capability(OSCALElement):
     incorporates_components: Optional[List[IncorporatesComponent]]
 
     class Config:
-        fields = {"control_implementations": "control-implementations",
-                  "incorporates_components": "incorporates-components"}
+        fields = {
+            "control_implementations": "control-implementations",
+            "incorporates_components": "incorporates-components",
+        }
 
 
 class ImportComponentDefinition(OSCALElement):
