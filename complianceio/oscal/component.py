@@ -76,12 +76,14 @@ class ImplementedRequirement(OSCALElement):
 
     def add_parameter(self, set_parameter: SetParameter):
         key = set_parameter.param_id
-        if key in self.set_parameters:
+        if not self.set_parameters:
+            self.set_parameters = []
+        elif key in self.set_parameters:
             raise KeyError(
                 f"SetParameter {key} already in ImplementedRequirement"
                 " for {self.control_id}"
             )
-        self.set_parameters[key] = set_parameter
+        self.set_parameters.append(set_parameter)
         return self
 
     class Config:

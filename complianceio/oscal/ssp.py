@@ -97,8 +97,8 @@ class NetworkDiagram(OSCALElement):
 
     def add_diagram(self, diagram: Diagram):
         key = str(diagram.uuid)
-        if not self.diagram:
-            self.diagram = []
+        if not self.diagrams:
+            self.diagrams = []
         elif key in self.diagram:
             raise KeyError(f"Diagram {key} already in NetworkDiagram")
         self.diagrams.append(diagram)
