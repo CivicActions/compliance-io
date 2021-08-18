@@ -7,7 +7,6 @@ import re
 from datetime import datetime
 from datetime import timezone
 from enum import Enum
-from typing import Dict
 from typing import List
 from typing import Optional
 from uuid import UUID
@@ -141,7 +140,7 @@ class OSCALElement(BaseModel):
                     del d[key]
         if hasattr(self.Config, "exclude_if_false"):
             for key in self.Config.exclude_if_false:
-                if not d.get(key, False):
+                if not d.get(key, False) and key in d:
                     del d[key]
         return d
 
@@ -216,6 +215,11 @@ class Revision(OSCALElement):
         allow_population_by_field_name = True
 
 
+class DocumentId(OSCALElement):
+    scheme: str  # really, URI
+    identifier: str
+
+
 class PartyTypeEnum(str, Enum):
     person = "person"
     organization = "organization"
@@ -285,34 +289,34 @@ class ResponsibleParty(OSCALElement):
     role_id: RoleIDEnum
     party_uuids: List[UUID]
     props: Optional[List[Property]]
-    annotations: Optional[List[Annotation]]
     links: Optional[List[Link]]
     remarks: Optional[MarkupMultiLine]
 
     class Config:
         fields = {"party_uuids": "party-uuids"}
         allow_population_by_field_name = True
-        container_assigned = ["role_id"]
 
 
 class Metadata(OSCALElement):
     title: str
+    published: datetime = datetime.now(timezone.utc)
+    last_modified: datetime = datetime.now(timezone.utc)
     version: str
     oscal_version: str = OSCAL_VERSION
     revisions: Optional[List[Revision]]
-    published: datetime = datetime.now(timezone.utc)
-    last_modified: datetime = datetime.now(timezone.utc)
+    document_ids: Optional[List[DocumentId]]
     props: Optional[List[Property]]
-    annotations: Optional[List[Annotation]]
     links: Optional[List[Link]]
     roles: Optional[List[Role]]
     locations: Optional[List[Location]]
     parties: Optional[List[Party]]
-    responsible_parties: Dict[str, ResponsibleParty] = {}
+    responsible_parties: Optional[List[ResponsibleParty]]
+    remarks: Optional[MarkupMultiLine]
 
     class Config:
         fields = {
             "oscal_version": "oscal-version",
+            "document_ids": "document-ids",
             "last_modified": "last-modified",
             "responsible_parties": "responsible-parties",
         }
@@ -322,17 +326,17 @@ class Metadata(OSCALElement):
 
 class SetParameter(OSCALElement):
     param_id: NCName
-    values: List[str]
+    values: List[str] = []
+    remarks: Optional[MarkupMultiLine]
 
     class Config:
+        fields = {"param_id": "param-id"}
         allow_population_by_field_name = True
-        container_assigned = ["param_id"]
 
 
 class ResponsibleRole(OSCALElement):
-    role_id: str
+    role_id: RoleIDEnum
     props: Optional[List[Property]]
-    annotations: Optional[List[Annotation]]
     links: Optional[List[Link]]
     party_uuids: Optional[List[UUID]]
     remarks: Optional[MarkupMultiLine]
@@ -340,4 +344,3 @@ class ResponsibleRole(OSCALElement):
     class Config:
         fields = {"party_uuids": "party-uuids"}
         allow_population_by_field_name = True
-        container_assigned = ["role_id"]

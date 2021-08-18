@@ -1,5 +1,6 @@
+# Define OSCAL Component using Component Definition Model v1.0.0
+# https://pages.nist.gov/OSCAL/reference/1.0.0/component-definition/json-outline/
 from enum import Enum
-from typing import Dict
 from typing import List
 from typing import Optional
 from uuid import UUID
@@ -7,7 +8,6 @@ from uuid import uuid4
 
 from pydantic import Field
 
-from .oscal import Annotation
 from .oscal import BackMatter
 from .oscal import Link
 from .oscal import MarkupLine
@@ -35,15 +35,20 @@ class ComponentTypeEnum(str, Enum):
 
 
 class Statement(OSCALElement):
-    statement_id: Optional[NCName]
+    statement_id: NCName
     uuid: UUID = Field(default_factory=uuid4)
     description: MarkupMultiLine = MarkupMultiLine("")
-    properties: Optional[List[Property]]
-    remarks: Optional[MarkupMultiLine]
+    props: Optional[List[Property]]
     links: Optional[List[Link]]
+    responsible_roles: Optional[List[ResponsibleRole]]
+    remarks: Optional[MarkupMultiLine]
 
     class Config:
-        container_assigned = ["statement_id"]
+        fields = {
+            "statement_id": "statement-id",
+            "responsible_roles": "responsible-roles",
+        }
+        allow_population_by_field_name = True
 
 
 class ImplementedRequirement(OSCALElement):
@@ -51,31 +56,34 @@ class ImplementedRequirement(OSCALElement):
     control_id: str
     description: MarkupMultiLine
     props: Optional[List[Property]]
-    annotations: Optional[List[Annotation]]
     links: Optional[List[Link]]
-    responsible_roles: Dict[str, ResponsibleRole] = {}
-    set_parameters: Dict[str, SetParameter] = {}
-    statements: Dict[NCName, Statement] = {}
+    set_parameters: Optional[List[SetParameter]]
+    responsible_roles: Optional[List[ResponsibleRole]]
+    statements: Optional[List[Statement]]
     remarks: Optional[MarkupMultiLine]
 
     def add_statement(self, statement: Statement):
         key = statement.statement_id
-        if key in self.statements:
+        if not self.statements:
+            self.statements = []
+        elif key in self.statements:
             raise KeyError(
                 f"Statement {key} already in ImplementedRequirement"
                 " for {self.control_id}"
             )
-        self.statements[NCName(statement.statement_id)] = statement
+        self.statements.append(statement)
         return self
 
     def add_parameter(self, set_parameter: SetParameter):
         key = set_parameter.param_id
-        if key in self.set_parameters:
+        if not self.set_parameters:
+            self.set_parameters = []
+        elif key in self.set_parameters:
             raise KeyError(
                 f"SetParameter {key} already in ImplementedRequirement"
                 " for {self.control_id}"
             )
-        self.set_parameters[key] = set_parameter
+        self.set_parameters.append(set_parameter)
         return self
 
     class Config:
@@ -90,11 +98,11 @@ class ImplementedRequirement(OSCALElement):
 
 class ControlImplementation(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
-    description: MarkupMultiLine
     source: str
+    description: MarkupMultiLine
     props: Optional[List[Property]]
-    implemented_requirements: List[ImplementedRequirement] = []
     links: Optional[List[Link]]
+    implemented_requirements: List[ImplementedRequirement] = []
 
     class Config:
         fields = {"implemented_requirements": "implemented-requirements"}
@@ -112,11 +120,11 @@ class Component(OSCALElement):
     description: MarkupMultiLine
     purpose: Optional[MarkupLine]
     props: Optional[List[Property]]
-    control_implementations: List[ControlImplementation] = []
     links: Optional[List[Link]]
-    annotations: Optional[List[Annotation]]
-    protocols: Optional[List[Protocol]]
     responsible_roles: Optional[List[ResponsibleRole]]
+    protocols: Optional[List[Protocol]]
+    control_implementations: List[ControlImplementation] = []
+    remarks: Optional[MarkupMultiLine]
 
     class Config:
         fields = {
@@ -125,48 +133,63 @@ class Component(OSCALElement):
             "responsible_roles": "responsible-roles",
         }
         allow_population_by_field_name = True
-        container_assigned = ["uuid"]
         exclude_if_false = ["control-implementations"]
+
+
+class IncorporatesComponent(OSCALElement):
+    component_uuid: UUID
+    description: str
+
+    class Config:
+        fields = {"component_uuid": "component-uuid"}
 
 
 class Capability(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
     name: str
     description: MarkupMultiLine
-    control_implementations: Optional[List[ControlImplementation]]
     props: Optional[List[Property]]
     links: Optional[List[Link]]
-    annotations: Optional[List[Annotation]]
+    control_implementations: Optional[List[ControlImplementation]]
+    incorporates_components: Optional[List[IncorporatesComponent]]
 
     class Config:
-        fields = {"control_implementations": "control-implementations"}
-        container_assigned = ["uuid"]
+        fields = {
+            "control_implementations": "control-implementations",
+            "incorporates_components": "incorporates-components",
+        }
 
 
 class ImportComponentDefinition(OSCALElement):
-    href: str  # really YRI
+    href: str  # really uri-reference
 
 
 class ComponentDefinition(OSCALElement):
     uuid: UUID = Field(default_factory=uuid4)
     metadata: Metadata
-    components: Dict[str, Component] = {}
+    components: Optional[List[Component]]
     back_matter: Optional[BackMatter]
-    capabilities: Dict[str, Capability] = {}
+    capabilities: Optional[List[Capability]]
     import_component_definitions: Optional[List[ImportComponentDefinition]]
 
     def add_component(self, component: Component):
         key = str(component.uuid)
-        if key in self.components:
+        # initialize optional component list
+        if not self.components:
+            self.components = []
+        elif key in self.components:
             raise KeyError(f"Component {key} already in ComponentDefinition")
-        self.components[str(component.uuid)] = component
+        self.components.append(component)
         return self
 
     def add_capability(self, capability: Capability):
         key = str(capability.uuid)
-        if key in self.capabilities:
+        # initialize optional capability list
+        if not self.capabilities:
+            self.capabilities = []
+        elif key in self.capabilities:
             raise KeyError(f"Capability {key} already in ComponentDefinition")
-        self.capabilities[str(capability.uuid)] = capability
+        self.capabilities.append(capability)
         return self
 
     class Config:

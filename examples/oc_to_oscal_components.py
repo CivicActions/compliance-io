@@ -23,6 +23,7 @@ def main(source):
 
     md = Metadata(title=oc.name, version="unknown")
     cd = component.ComponentDefinition(metadata=md)
+    cd.components = []
     for o_comp in oc.components:
         c = component.Component(title=o_comp.name, description=o_comp.name)
         c.control_implementations = []
