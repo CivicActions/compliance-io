@@ -28,6 +28,10 @@ def main(source):
         'NIST_SP80053r5': (
             'https://raw.githubusercontent.com/usnistgov/oscal-content/'
             'master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev45catalog.json'
+        ),
+        'CMS_ARS_3_1': (
+            'https://raw.githubusercontent.com/CMSgov/ars-machine-readable'
+            '/main/3.1/oscal/CMS_ARS_3_1_catalog.json'
         )
     }
 
