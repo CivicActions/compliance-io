@@ -77,18 +77,19 @@ def create_groups(p):
                 links = []
                 related = row[c_map.get('related')].value
                 if related and related.strip():
-                    rlt = related.split(',')
+                    rlt = related.strip().replace(' ', ',').split(',')
                     for r in rlt:
                         if r[:4] != 'None':
                             link = r.strip()
-                            links.append(Link(
-                                href=f'#{link}',
-                                rel='related'
-                            ))
+                            if link:
+                                links.append(Link(
+                                    href=f'#{link}',
+                                    rel='related'
+                                ))
                 l = links if len(links) > 0 else None
 
                 controls.append(Control(
-                    id=cid,
+                    id=cid.strip('_smt'),
                     class_='ARS-5.0-Mandatory',
                     title=name,
                     props=[Property(
