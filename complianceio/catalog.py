@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -79,11 +79,13 @@ def create_groups(p):
                 if related and related.strip():
                     rlt = related.split(',')
                     for r in rlt:
-                        link = r.strip()
-                        links.append(Link(
-                            href=f'#{link}',
-                            rel='reference'
-                        ))
+                        if r[:4] != 'None':
+                            link = r.strip()
+                            links.append(Link(
+                                href=f'#{link}',
+                                rel='related'
+                            ))
+                l = links if len(links) > 0 else None
 
                 controls.append(Control(
                     id=cid,
@@ -96,7 +98,7 @@ def create_groups(p):
                         name='sort-id',
                         value=control_id.lower()
                     )],
-                    links=links,
+                    links=l,
                     parts=parts,
                 ))
         family_id = family
@@ -210,6 +212,7 @@ def create_parts(parts):
                                     )],
                                     prose=tv.get('prose')
                                 ))
+                        tp = tertiary if len(tertiary) > 0 else None
                         secondary.append(Part(
                             id=f'{k}.{f}.{s}',
                             name='item',
@@ -217,9 +220,10 @@ def create_parts(parts):
                                 name='label',
                                 value=s,
                             )],
-                            parts=tertiary,
+                            parts=tp,
                             prose=sv.get('prose'),
                         ))
+                sp = secondary if len(secondary) > 0 else None
                 first.append(Part(
                     id=f'{k}.{f}',
                     name='item',
@@ -227,10 +231,10 @@ def create_parts(parts):
                         name='label',
                         value=f,
                     )],
-                    parts=secondary,
+                    parts=sp,
                     prose=fv.get('prose'),
                 ))
-
+        fp = first if len(first) > 0 else None
         part.append(Part(
             id=f'{k}',
             name='item',
@@ -238,7 +242,7 @@ def create_parts(parts):
                 name='label',
                 value=k,
             )],
-            parts=first,
+            parts=fp,
             prose=pv.get('prose'),
         ))
     return part
@@ -267,11 +271,11 @@ def main(title, source):
     groups = create_groups(p)
     uuid = uuid4().urn
 
-    today = datetime.now().isoformat()
+    today = datetime.now(timezone(timedelta(hours=-6))).isoformat()
 
     md = Metadata(
         title=title,
-        last_modified=today,
+        last_modified=str(today),
         version='1.0',
         oscal_version='1.0.0'
     )
@@ -281,7 +285,7 @@ def main(title, source):
             metadata=md,
             groups=groups,
         )
-    root = Model(catalog=catalog).dict(by_alias=True)
+    root = Model(catalog=catalog).dict(by_alias=True, exclude_unset=True, exclude_none=True)
     print(json.dumps(root, indent=2, default=str))
 
 if __name__ == "__main__":
