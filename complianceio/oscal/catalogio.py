@@ -1,10 +1,10 @@
+import json
 import os
 import re
-import json
 from collections import defaultdict
 from typing import List
 
-from utilities import de_oscalize_control_id, uhash
+from .utilities import de_oscalize_control_id, uhash
 
 
 class Catalog(object):

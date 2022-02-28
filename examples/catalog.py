@@ -1,5 +1,5 @@
-from catalogio import Catalog
 import click
+from complianceio.oscal.catalogio import Catalog
 
 
 @click.command()
@@ -13,6 +13,7 @@ def main(src):
     Perform operations on OSCAL Catalog.
     """
     catalog = Catalog(src)
+    print(catalog.get_group_ids())
 
 
 if __name__ == "__main__":
