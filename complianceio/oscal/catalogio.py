@@ -10,7 +10,7 @@ from .utilities import de_oscalize_control_id, uhash
 class Catalog(object):
     """Represent a catalog"""
 
-    def __init__(self, source, parameter_values=dict()):
+    def __init__(self, source):
         try:
             self.oscal = self._load_catalog_json(source)
             json.dumps(self.oscal)
@@ -349,30 +349,24 @@ class Catalog(object):
             cl_all_dict[cl_dict["id"]] = cl_dict
         return cl_all_dict
 
-    def get_flattened_controls_all_as_dict_list(self):
-        """Return all control dictionary in a nested Python list"""
-        # Create an empty list
-        cl_all_list = []
-        # Get all the controls
-        for cl in self.get_controls_all():
-            # Get flattened control and add to list of controls
-            cl_dict = self.get_flattened_control_as_dict(cl)
-            cl_all_list.append(cl_dict)
-        return cl_all_list
 
-    def _cache_parameters_by_control(self):
-        cache = defaultdict(list)
-        if self.oscal:
-            groups = self.oscal["groups"]
-            for family in groups:
-                for control in family["controls"]:
-                    control_id = control["id"]
-                    for parameter in control.get("params", []):
-                        cache[control_id].append(parameter["id"])
-        return dict(cache)
+    def get_control_parameter_values(self, control) -> dict:
+        params: dict = {}
+        if "params" in control:
+            for p in control.get("params"):
+                pid = p.get("id")
+                if "values" in p:
+                    params[pid] = p.get("values")
+                elif "select" in p:
+                    select = p.get("select")
+                    howmany = select.get("how-many") if "how-many" in select else 1
+                    params[pid] = {
+                        howmany: select.get("choice"),
+                    }
+                else:
+                    params[pid] = p.get("label")
+        return params
 
-    def get_parameter_ids_for_control(self, control_id):
-        return self.parameters_by_control.get(control_id, [])
 
     @property
     def catalog_title(self):
