@@ -13,7 +13,7 @@ def main(src):
     Perform operations on OSCAL Catalog.
     """
     catalog = Catalog(src)
-    print(catalog.get_group_ids())
+    print(catalog.get_flattened_controls_all_as_dict())
 
 
 if __name__ == "__main__":
