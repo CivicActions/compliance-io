@@ -1,7 +1,5 @@
 import pytest
-
 from complianceio.oscal.catalogio import Catalog
-
 
 catalog = Catalog('tests/NIST_SP-800-53_rev5_test.json')
 
@@ -13,7 +11,12 @@ def test_load_catalog():
 def test_catalog_title():
     """Get the Catalog title"""
     assert catalog.catalog_title == "NIST SP 800-53 Rev 5 Controls Test Catalog"
- 
+
+def test_get_groups():
+    """Get Catalog Groups as list"""
+    groups = catalog.get_groups()
+    assert isinstance(groups, list)
+    assert len(groups) == 1
 
 def test_get_group_ids():
     """Test getting the Groups for a Catalog"""
