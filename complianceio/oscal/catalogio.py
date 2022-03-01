@@ -9,26 +9,6 @@ from .utilities import de_oscalize_control_id, uhash
 
 class Catalog(object):
     """Represent a catalog"""
-    def GetInstance(cls, catalog_key="CMS_ARS_5_0", parameter_values=dict()):
-
-        catalog_instance_key = Catalog._catalog_instance_key(
-            catalog_key, parameter_values
-        )
-
-        if not hasattr(cls, catalog_instance_key):
-            new_catalog = Catalog(
-                catalog_key=catalog_key, parameter_values=parameter_values
-            )
-            setattr(cls, catalog_instance_key, new_catalog)
-        return getattr(cls, catalog_instance_key)
-
-    @staticmethod
-    def _catalog_instance_key(catalog_key, parameter_values):
-        catalog_instance_key = "_cached_instance_" + catalog_key
-        if parameter_values:
-            parameter_values_hash = uhash(frozenset(parameter_values.items()))
-            catalog_instance_key += "_" + str(parameter_values_hash)
-        return catalog_instance_key.replace("-", "_")
 
     def __init__(self, source, parameter_values=dict()):
         try:
@@ -46,13 +26,6 @@ class Catalog(object):
             self.catalog_id = None
             self.info = {}
             self.info["groups"] = None
-
-        # self.parameter_values = parameter_values
-        # self.flattened_controls_all_as_dict = self.get_flattened_controls_all_as_dict()
-        # self.flattened_controls_all_as_dict_list = (
-        #     self.get_flattened_controls_all_as_dict_list()
-        # )
-        # self.parameters_by_control = self._cache_parameters_by_control()
 
     def _load_catalog_json(self, source):
         """Read catalog file - JSON"""
@@ -183,7 +156,7 @@ class Catalog(object):
 
     def get_control_parameter_label_by_id(self, control, param_id):
         """Return value of a parameter of a control by id of parameter"""
-        param = self.find_dict_by_value(control["parameters"], "id", param_id)
+        param = self.find_dict_by_value(control["params"], "id", param_id)
         return param["label"]
 
     def get_control_prose_as_markdown(
@@ -291,10 +264,10 @@ class Catalog(object):
 
         if control is None:
             return text
-        if "parameters" not in control:
+        if "params" not in control:
             return text
 
-        for parameter in control["parameters"]:
+        for parameter in control["params"]:
             if parameter["id"] not in parameter_values:
                 parameter_values[
                     parameter["id"]
@@ -394,7 +367,7 @@ class Catalog(object):
             for family in groups:
                 for control in family["controls"]:
                     control_id = control["id"]
-                    for parameter in control.get("parameters", []):
+                    for parameter in control.get("params", []):
                         cache[control_id].append(parameter["id"])
         return dict(cache)
 

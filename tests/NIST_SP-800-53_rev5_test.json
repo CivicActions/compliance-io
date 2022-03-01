@@ -2,7 +2,7 @@
   "catalog": {
     "uuid": "4cd70b73-a0be-4bf5-9cc6-6535dd251939",
     "metadata": {
-      "title": "Electronic Version of NIST SP 800-53 Rev 5 Controls and SP 800-53A Rev 5 Assessment Procedures",
+      "title": "NIST SP 800-53 Rev 5 Controls Test Catalog",
       "last-modified": "2022-01-25T11:42:43.08654-05:00",
       "version": "5.1.1",
       "oscal-version": "1.0.0",
