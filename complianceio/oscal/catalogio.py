@@ -1,3 +1,4 @@
+from ast import Str
 import json
 import os
 import re
@@ -28,62 +29,69 @@ class Catalog(object):
             self.info["groups"] = None
 
     def _load_catalog_json(self, source) -> dict:
-        """Read catalog file - JSON"""
+        """Read catalog file - JSON""" 
+        oscal: dict = {}
         with open(source, "r") as f:
             oscal = json.load(f)
         return oscal.get("catalog")
 
-    def find_dict_by_value(self, search_array, search_key, search_value):
-        """Return the dictionary in an array of dictionaries with a key matching a value"""
-        if search_array is None:
-            return None
-        result_dict = next(
-            (sub for sub in search_array if sub[search_key] == search_value), None
-        )
-        return result_dict
+    def find_dict_by_value(self, search_in: list, search_key: str, search_value: str) -> dict:
+        """
+        Return the dictionary in an array of dictionaries with a key matching a value
+        :param search_in: a list of dicts to search in
+        :param search_key: the key to search for
+        :param search_value: the value to search for
+        :return: return a dict containing the search_value
+        """
+        results: dict = {}
+        if search_in is not None:
+            results = next(
+                (s for s in search_in if search_key in s and s.get(search_key) == search_value), None
+            )
+        return results
 
-
+    # Groups
     def get_groups(self) -> List[str]:
         groups: List[str] = []
+
         if self.oscal and "groups" in self.oscal:
             groups = self.oscal["groups"]
         return groups
 
-    def get_group_ids(self) -> []:
+    def get_group_ids(self) -> List:
         ids: List[str] = []
-        search_collection = self.get_groups()
-        ids = [item["id"] for item in search_collection]
+        groups = self.get_groups()
+        ids = [item["id"] for item in groups]
         return ids
 
     def get_group_title_by_id(self, id) -> str:
         group = self.find_dict_by_value(self.get_groups(), "id", id)
         if group is None:
             return None
-        return group["title"]
+        return group.get("title")
 
     def get_group_id_by_control_id(self, control_id) -> str:
         """Return group id given id of a control"""
         group_ids = self.get_group_ids()
+        gid: Str = None
         if group_ids:
-            for group_id in group_ids:
-                if group_id.lower() == control_id[:2].lower():
-                    return group_id
-        else:
-            return None
+            for g in group_ids:
+                if g.lower() == control_id[:2].lower():
+                    gid = g
+        return gid
 
-        return None
-
-    def get_controls(self):
+    # Controls
+    def get_controls(self) -> List:
         controls: List[str] = []
         for group in self.get_groups():
-            controls += [control for control in group["controls"]]
+            controls += [control for control in group.get("controls")]
         return controls
 
-    def get_control_ids(self):
+    def get_control_ids(self) -> List:
         search_collection = self.get_controls()
         return [item["id"] for item in search_collection]
 
-    def get_controls_all(self) -> []:
+    def get_controls_all(self) -> List:
         controls: List[str] = []
         for group in self.get_groups():
             for control in group["controls"]:
@@ -92,44 +100,49 @@ class Catalog(object):
                     controls += [control_e for control_e in control["controls"]]
         return controls
 
-    def get_controls_all_ids(self):
+    def get_controls_all_ids(self) -> List:
         search_collection = self.get_controls_all()
         return [item["id"] for item in search_collection]
 
-    def get_control_by_id(self, control_id):
+    def get_control_by_id(self, control_id) -> dict:
         """Return the dictionary in an array of dictionaries with a key matching a value"""
         search_array = self.get_controls_all()
         search_key = "id"
         search_value = control_id
-        result_dict = next(
+        result_dict: dict = next(
             (sub for sub in search_array if sub[search_key] == search_value), None
         )
         return result_dict
 
-    def get_control_property_by_name(self, control, property_name):
+    # Params
+    def get_control_parameters(self, control) -> dict:
+        """Return the guidance prose for a control property"""
+        return self.__get_control_parameter_values(control)
+
+
+    def get_control_parameter_label_by_id(self, control, param_id) -> str:
+        """Return value of a parameter of a control by id of parameter"""
+        param = self.find_dict_by_value(control.get("params"), "id", param_id)
+        return param.get("label")
+
+    # Props
+    def get_control_property_by_name(self, control, property_name) -> str:
         """Return value of a property of a control by name of property"""
         if control is None:
             return None
-        prop = self.find_dict_by_value(control["properties"], "name", property_name)
+        prop = self.find_dict_by_value(control.get("props"), "name", property_name)
         if prop is None:
             return None
-        return prop["value"]
+        return prop.get("value")
 
-    def get_control_part_by_name(self, control, part_name):
-        """Return value of a part of a control by name of part"""
-        if "parts" in control:
-            part = self.find_dict_by_value(control["parts"], "name", part_name)
-            return part
-        else:
-            return None
 
-    def get_control_guidance_links(self, control):
+    def get_control_guidance_links(self, control) -> List:
         """Return the links in the guidance section of a control"""
         guidance = self.get_control_part_by_name(control, "guidance")
+        links: List[str] = []
         if guidance and "links" in guidance:
-            return guidance["links"]
-        else:
-            return []
+            links = guidance.get("links")
+        return links
 
     def get_guidance_related_links_by_value_in_href(self, control, value):
         """
@@ -139,7 +152,7 @@ class Catalog(object):
         links = [
             link
             for link in self.get_control_guidance_links(control)
-            if link["rel"] == "related" and value in link["href"]
+            if link.get("rel") == "related" and value in link.get("href")
         ]
         return links
 
@@ -149,16 +162,11 @@ class Catalog(object):
         the 'href' string
         """
         links_text = [
-            link["text"]
+            link.get("text")
             for link in self.get_control_guidance_links(control)
-            if link["rel"] == "related" and value in link["href"]
+            if link.get("rel") == "related" and value in link.get("href")
         ]
         return links_text
-
-    def get_control_parameter_label_by_id(self, control, param_id):
-        """Return value of a parameter of a control by id of parameter"""
-        param = self.find_dict_by_value(control["params"], "id", param_id)
-        return param["label"]
 
 
     def get_flattened_control_as_dict(self, control) -> dict:
