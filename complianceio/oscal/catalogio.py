@@ -110,7 +110,7 @@ class Catalog(object):
         search_key = "id"
         search_value = control_id
         result_dict: dict = next(
-            (sub for sub in search_array if sub[search_key] == search_value), None
+            (s for s in search_array if search_key in s and s[search_key] == search_value), None
         )
         return result_dict
 

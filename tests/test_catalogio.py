@@ -18,7 +18,7 @@ def test_get_groups():
     """Get Catalog Groups as list"""
     groups = catalog.get_groups()
     assert isinstance(groups, list)
-    assert len(groups) == 1
+    assert len(groups) == 20
 
 def test_get_group_ids():
     """Test getting the Groups for a Catalog"""
@@ -39,7 +39,7 @@ def test_get_group_id_by_control_id():
 def test_get_controls():
     """Test getting all controls"""
     controls = catalog.get_controls()
-    assert len(controls) == 2
+    assert len(controls) == 53
     assert controls[0].get("title") == "Policy and Procedures"
 
 def test_get_control_by_id():
@@ -56,7 +56,7 @@ def test_get_controls_all():
 def test_get_controls_all_ids():
     controls = catalog.get_controls_all_ids()
     assert isinstance(controls, list)
-    assert len(controls) == 15
+    assert len(controls) == 186
 
 # Params
 def test_get_control_parameter_label_by_id():

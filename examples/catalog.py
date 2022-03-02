@@ -13,9 +13,7 @@ def main(src):
     Perform operations on OSCAL Catalog.
     """
     catalog = Catalog(src)
-    control = catalog.get_control_by_id("ac-2")
-    print(catalog.get_control_parameters(control))
-    print(type(catalog.get_control_parameters(control)))
+    print(catalog.catalog_title)
 
 
 if __name__ == "__main__":
