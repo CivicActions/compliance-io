@@ -31,7 +31,7 @@ poetry add git git+https://github.com/CivicActions/compliance-io.git#main
 
 ### OpenControl
 
-```
+```python
 from complianceio import opencontrol
 
 oc = opencontrol.load("path/to/opencontrol.yaml")
@@ -69,6 +69,10 @@ to JSON.  See `examples/oc_to_oscal_components.py`.
 
   Write out a JSON-L file of all controls and statements loaded from
   an OpenControl repository.
+
+* `examples/catalog.py`
+
+  Load an OSCAL catalog and get values from it.
 
 ## Development
 
