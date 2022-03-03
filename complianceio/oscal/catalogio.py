@@ -117,30 +117,29 @@ class Catalog(object):
         )
         return result_dict
 
-    def get_control_statement(self, control: dict) -> str:
+    def get_control_statement(self, control: dict) -> List:
         statement = self.get_control_part_by_name(control, "statement")
-        lines: List[str] = []
-        part: List[str] = []
+        text: List[dict] = []
         if statement:
             if "parts" in statement:
-                part = self.__get_parts(statement.get("parts"))
-            if part:
-                lines.extend(part)
-        return "\n".join(lines)
+                text = self.__get_parts(statement.get("parts"))
+        return text
 
     def __get_parts(self, parts) -> List:
-        lines: List[str] = []
+        section: List[dict] = []
         for p in parts:
+            part: dict = {"prose": None, "parts": None}
             if "prose" in p:
                 label = self.get_control_property_by_name(p, "label")
                 prose = p.get("prose")
-                lines.append(f"{label} {prose}")
-            part: List[str] = []
+                part["prose"] = {label: prose}
+            subpart: List[dict] = []
             if "parts" in p:
-                part = self.__get_parts(p.get("parts"))
+                subpart = self.__get_parts(p.get("parts"))
             if part:
-                lines.extend(part)
-        return lines
+                part["parts"] = subpart
+            section.append(part)
+        return section
 
     # Params
     def get_control_parameters(self, control: dict) -> dict:

@@ -1,3 +1,5 @@
+from typing import List
+
 from complianceio.oscal.catalogio import Catalog
 
 catalog = Catalog("tests/NIST_SP-800-53_rev5_test.json")
@@ -16,9 +18,9 @@ def test_catalog_title():
 
 # Groups
 def test_get_groups():
-    """Get Catalog Groups as list"""
+    """Get Catalog Groups as List"""
     groups = catalog.get_groups()
-    assert isinstance(groups, list)
+    assert isinstance(groups, List)
     assert len(groups) == 20
 
 
@@ -52,25 +54,25 @@ def test_get_control_by_id():
     """Get a control by the Control ID"""
     control = catalog.get_control_by_id("ac-2")
     assert control.get("title") == "Account Management"
-    assert isinstance(control.get("params"), list)
+    assert isinstance(control.get("params"), List)
 
 
 def test_get_control_statement():
     """Get the control statement with placeholders"""
     control = catalog.get_control_by_id("ac-2")
     prose = catalog.get_control_statement(control)
-    assert prose.startswith("a. Define and document the")
+    assert isinstance(prose, List)
 
 
 def test_get_controls_all():
     controls = catalog.get_controls_all()
-    assert isinstance(controls, list)
+    assert isinstance(controls, List)
     assert isinstance(controls[0], dict)
 
 
 def test_get_controls_all_ids():
     controls = catalog.get_controls_all_ids()
-    assert isinstance(controls, list)
+    assert isinstance(controls, List)
     assert len(controls) == 186
 
 
