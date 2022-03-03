@@ -48,6 +48,12 @@ def test_get_control_by_id():
     assert control.get("title") == "Account Management"
     assert isinstance(control.get("params"), list)
 
+def test_get_control_statement():
+    """Get the control statement with placeholders"""
+    control = catalog.get_control_by_id("ac-2")
+    prose = catalog.get_control_statement(control)
+    assert prose.startswith("a. Define and document the")
+
 def test_get_controls_all():
     controls = catalog.get_controls_all()
     assert isinstance(controls, list)

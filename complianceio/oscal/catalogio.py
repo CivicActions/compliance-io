@@ -104,7 +104,7 @@ class Catalog(object):
         search_collection = self.get_controls_all()
         return [item["id"] for item in search_collection]
 
-    def get_control_by_id(self, control_id) -> dict:
+    def get_control_by_id(self, control_id: str) -> dict:
         """Return the dictionary in an array of dictionaries with a key matching a value"""
         search_array = self.get_controls_all()
         search_key = "id"
@@ -114,19 +114,44 @@ class Catalog(object):
         )
         return result_dict
 
+    def get_control_statement(self, control: dict) -> str:
+        statement = self.get_control_part_by_name(control, "statement")
+        lines: List[str] = []
+        part: List[str] = []
+        if statement:
+            if "parts" in statement:
+                part = self.__get_parts(statement.get("parts"))
+            if part:
+                lines.extend(part)  
+        return "\n".join(lines)
+
+    def __get_parts(self, parts) -> List:
+        lines: List[str] = []
+        for p in parts:
+            if "prose" in p:
+                label = self.get_control_property_by_name(p, "label")
+                prose = p.get("prose")
+                lines.append(f"{label} {prose}")
+            part: List[str] = []
+            if "parts" in p:
+                part = self.__get_parts(p.get("parts"))
+            if part:
+                lines.extend(part)
+        return lines
+
     # Params
-    def get_control_parameters(self, control) -> dict:
+    def get_control_parameters(self, control: dict) -> dict:
         """Return the guidance prose for a control property"""
         return self.__get_control_parameter_values(control)
 
 
-    def get_control_parameter_label_by_id(self, control, param_id) -> str:
+    def get_control_parameter_label_by_id(self, control: dict, param_id: str) -> str:
         """Return value of a parameter of a control by id of parameter"""
         param = self.find_dict_by_value(control.get("params"), "id", param_id)
         return param.get("label")
 
     # Props
-    def get_control_property_by_name(self, control, property_name) -> str:
+    def get_control_property_by_name(self, control: dict, property_name: str) -> str:
         """Return value of a property of a control by name of property"""
         if control is None:
             return None
@@ -135,8 +160,15 @@ class Catalog(object):
             return None
         return prop.get("value")
 
+    def get_control_part_by_name(self, control: dict, part_name: str) -> str:
+        """Return value of a part of a control by name of part"""
+        part: str = None
+        if "parts" in control:
+            part = self.find_dict_by_value(control.get("parts"), "name", part_name)
+        return part
 
-    def get_control_guidance_links(self, control) -> List:
+
+    def get_control_guidance_links(self, control: dict) -> List:
         """Return the links in the guidance section of a control"""
         guidance = self.get_control_part_by_name(control, "guidance")
         links: List[str] = []
@@ -144,7 +176,7 @@ class Catalog(object):
             links = guidance.get("links")
         return links
 
-    def get_guidance_related_links_by_value_in_href(self, control, value):
+    def get_guidance_related_links_by_value_in_href(self, control: dict, value) -> List:
         """
         Return objects from 'rel': 'related' links with particular value found
         in the 'href' string
@@ -156,7 +188,7 @@ class Catalog(object):
         ]
         return links
 
-    def get_guidance_related_links_text_by_value_in_href(self, control, value):
+    def get_guidance_related_links_text_by_value_in_href(self, control, value) -> List:
         """
         Return 'text' from rel': 'related' links with particular value found in
         the 'href' string
