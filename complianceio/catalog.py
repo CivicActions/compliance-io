@@ -39,6 +39,12 @@ def create_groups(p):
             reference = row[c_map.get('reference')].value
             baseline = row[c_map.get('baseline')].value
 
+            # ignore duplicated parts (may be better to use these instead)
+            if baseline is None:
+                continue
+            # check for ac--09(02)_smt
+            control_id = control_id.replace('--', '-')
+
             if family_id is not None and family != family_id:
                 g = add_group(group_id, family_id, controls)
                 groups.append(g)
@@ -225,6 +231,7 @@ def create_parts(parts):
                             prose=sv.get('prose'),
                         ))
                 sp = secondary if len(secondary) > 0 else None
+                print(f'{k}.{f}')
                 first.append(Part(
                     id=f'{k}.{f}',
                     name='item',
@@ -236,6 +243,7 @@ def create_parts(parts):
                     prose=fv.get('prose'),
                 ))
         fp = first if len(first) > 0 else None
+        print(f'{k}')
         part.append(Part(
             id=f'{k}',
             name='item',
