@@ -71,7 +71,7 @@ def get_catalog_keys(standard_key, profile_ids):
     return keys
 
 
-def read_opencontrol_components(source, profile_ids):
+def parse_opencontrol_components(source, profile_ids):
     """
     Read an OpenControl repo and perform gap analysis against a Catalog.
     """
@@ -107,8 +107,12 @@ def read_opencontrol_components(source, profile_ids):
                         catalog_keys[standard][key] = []
                         control_type = "Shared Not in Profile"
 
+                if comp.key:
+                    system = comp.key
+                else:
+                    system = comp.name
                 catalog_keys[standard][key].append(
-                            {"system": comp.key,
+                            {"system": system,
                              "security_control_type": control_type}
                 )
     return catalog_keys
@@ -138,7 +142,8 @@ def read_ars_yaml_profile_ids(ars, impact_level, quiet):
         if data["Baseline"] and impact_level in data["Baseline"]:
             profile_ids.append(oscalize_control_id(control))
     if not quiet:
-        print("{:d} controls in ARS {:s} {:s}".format(len(profile_ids), ars, impact_level))
+        print("{:d} controls in ARS {:s} {:s}".format(
+            len(profile_ids), ars, impact_level))
     return profile_ids
 
 
@@ -178,7 +183,7 @@ def prepare_report(gap_analysis, quiet):
 
 
 def print_report(rv):
-    print("{:<10} {:<10} {:<8} {:<8} {:<8} {:<8}".format(
+    print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}".format(
         'System', 'Inherited', 'Hybrid', 'In-Not', 'Hy-Not', 'Total'))
     tot_in = 0
     tot_hy = 0
@@ -198,11 +203,11 @@ def print_report(rv):
         tot_nh += not_hy
         total = inherit + hybrid + not_in + not_hy
         totals += total
-        print("{:<10} {:<10} {:<8} {:<8} {:<8} {:<8}".format(
+        print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}".format(
             system, inherit, hybrid, not_in, not_hy, total))
-    print("{:<10} {:<10} {:<8} {:<8} {:<8} {:<8}".format(
+    print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}".format(
         "Totals", tot_in, tot_hy, tot_ni, tot_nh, totals))
-    print("{:<10} {:<10}".format("Empty:", len(rv["Empty"])))
+    print("{:<15} {:<10}".format("Empty:", len(rv["Empty"])))
 
 
 def print_list(rv, shared, inherited, not_in_profile):
@@ -290,7 +295,7 @@ def main(source, ars, level, empty, shared, inherited, not_in_profile, json_out,
             '/SP800-53/rev4/json/NIST_SP-800-53_rev4_MODERATE-baseline_profile.json'
         )
         profile_ids = read_nist_json_profile_ids(profile, quiet)
-    gap_analysis = read_opencontrol_components(source, profile_ids)
+    gap_analysis = parse_opencontrol_components(source, profile_ids)
     if json_out:
         print(json.dumps(gap_analysis, indent=4))
     else:
