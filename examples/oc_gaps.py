@@ -138,10 +138,15 @@ def read_ars_yaml_profile_ids(ars, impact_level, quiet):
     url = requests.get(profile_url)
     profile = yaml.safe_load(url.text)
 
-    profile_ids = []
+    # profile_ids = []
+    profile_ids = {}
     for control, data in profile.items():
         if data["Baseline"] and impact_level in data["Baseline"]:
-            profile_ids.append(oscalize_control_id(control))
+            # profile_ids.append(oscalize_control_id(control))
+            ctrl = profile.get(control)
+            family_name = "{:s} : {:s}".format(
+                ctrl.get("Control Family"), ctrl.get("Control Name"))
+            profile_ids[oscalize_control_id(control)] = family_name
     if not quiet:
         print("{:d} controls in ARS {:s} {:s}".format(
             len(profile_ids), ars, impact_level))
@@ -228,6 +233,27 @@ def print_list(rv, shared, inherited, not_in_profile):
         print({system: rv[system][column]})
 
 
+def pretty_print_system(rv, profile_ids, sys):
+    print("==== {:s} ====".format(sys))
+    for control in rv[sys]:
+        id = oscalize_control_id(control)
+        if id in profile_ids:
+            desc = profile_ids[id]
+        else:
+            desc = "Not in baseline"
+        print("{:9s} {:s}".format(control, desc))
+
+
+def pretty_print_controls(rv, profile_ids, system=False):
+    if system:
+        pretty_print_system(rv, profile_ids, system)
+    else:
+        for sys, controls in profile_ids.items():
+            if sys == "Empty":
+                continue
+            pretty_print_system(rv, profile_ids, sys)
+
+
 @click.command()
 @click.option(
     "-a",
@@ -268,6 +294,12 @@ def print_list(rv, shared, inherited, not_in_profile):
     help="List of controls with no implementation statement",
 )
 @click.option(
+    "-p",
+    "--pretty",
+    is_flag=True,
+    help="Pretty print the output (with -s, -i or -e)",
+)
+@click.option(
     "-q",
     "--quiet",
     is_flag=True,
@@ -283,7 +315,8 @@ def print_list(rv, shared, inherited, not_in_profile):
     "source",
     type=click.Path(exists=True, dir_okay=False, file_okay=True, resolve_path=True),
 )
-def main(source, ars, level, empty, shared, inherited, not_in_profile, json_out, quiet):
+def main(source, ars, level, empty, shared, inherited,
+         not_in_profile, json_out, pretty, quiet):
     """
     Read opencontrol.yaml and perform gap analysis against a Catalog Baseline.
     """
@@ -302,7 +335,10 @@ def main(source, ars, level, empty, shared, inherited, not_in_profile, json_out,
     else:
         rv = prepare_report(gap_analysis, quiet)
         if empty:
-            print({"Empty": rv["Empty"]})
+            if pretty:
+                pretty_print_controls(rv, profile_ids, "Empty")
+            else:
+                print({"Empty": rv["Empty"]})
         elif shared or inherited:
             print_list(rv, shared, inherited, not_in_profile)
         else:
