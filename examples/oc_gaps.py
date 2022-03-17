@@ -10,13 +10,14 @@ from complianceio import opencontrol
 from complianceio.oscal.oscal import oscalize_control_id
 
 """
-Read an OpenControl repo and perform gap analysis against a Catalog Baseline.
+Read opencontrol.yaml and perform gap analysis against a Catalog Baseline.
 Return:
     Count and List of Controls Fully Inherited
     Count and list of Controls with Shared Responsibility
     Count and list of Controls have no implementation statement
 TODO:
-    Hybrid should trump Inherited, but shared should not
+    Numbers are off. To fix: Inherited should trump Hybrid,
+    but create new "Multiple" list for control contributions
 """
 
 
@@ -284,7 +285,7 @@ def print_list(rv, shared, inherited, not_in_profile):
 )
 def main(source, ars, level, empty, shared, inherited, not_in_profile, json_out, quiet):
     """
-    Read an OpenControl repo and perform gap analysis against a Catalog Baseline.
+    Read opencontrol.yaml and perform gap analysis against a Catalog Baseline.
     """
 
     if ars:

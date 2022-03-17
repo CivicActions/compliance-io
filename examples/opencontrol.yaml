@@ -7,5 +7,6 @@ metadata:
 components:
   - ../../component-library/ociso/opencontrol
   - ../../component-library/aws/opencontrol
+  - ../../component-library/eua/opencontrol
   - ../../component-library/idm/opencontrol
   
