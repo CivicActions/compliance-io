@@ -158,7 +158,7 @@ def prepare_report(gap_analysis, quiet):
     empty = []
     for standard, controls in gap_analysis.items():
         if not quiet:
-            print("{:d} controls in {:s} (including controls not in Profile)".
+            print("{:d} controls in {:s} (including controls Not in Profile/Baseline)".
                   format(len(controls), standard))
         for control, types in controls.items():
             if not types:
@@ -216,7 +216,7 @@ def print_report(rv):
     print("{:<15} {:<10}".format("Empty:", len(rv["Empty"])))
 
 
-def print_list(rv, shared, inherited, not_in_profile):
+def print_list(rv, shared, inherited, not_in_profile, profile_ids, pretty):
     if inherited:
         if not_in_profile:
             column = "not_in"
@@ -230,12 +230,15 @@ def print_list(rv, shared, inherited, not_in_profile):
     for system, values in rv.items():
         if system == "Empty":
             continue
-        print({system: rv[system][column]})
+        if pretty:
+            pretty_print_list(rv[system][column], profile_ids, system)
+        else:
+            print({system: rv[system][column]})
 
 
-def pretty_print_system(rv, profile_ids, sys):
-    print("==== {:s} ====".format(sys))
-    for control in rv[sys]:
+def pretty_print_list(list, profile_ids, system):
+    print("==== {:s} ====".format(system))
+    for control in list:
         id = oscalize_control_id(control)
         if id in profile_ids:
             desc = profile_ids[id]
@@ -246,12 +249,12 @@ def pretty_print_system(rv, profile_ids, sys):
 
 def pretty_print_controls(rv, profile_ids, system=False):
     if system:
-        pretty_print_system(rv, profile_ids, system)
+        pretty_print_list(rv[system], profile_ids, system)
     else:
         for sys, controls in profile_ids.items():
             if sys == "Empty":
                 continue
-            pretty_print_system(rv, profile_ids, sys)
+            pretty_print_list(rv[sys], profile_ids, sys)
 
 
 @click.command()
@@ -340,7 +343,7 @@ def main(source, ars, level, empty, shared, inherited,
             else:
                 print({"Empty": rv["Empty"]})
         elif shared or inherited:
-            print_list(rv, shared, inherited, not_in_profile)
+            print_list(rv, shared, inherited, not_in_profile, profile_ids, pretty)
         else:
             print_report(rv)
 
