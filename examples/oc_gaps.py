@@ -185,39 +185,62 @@ def prepare_report(gap_analysis, quiet):
                         else:
                             rv[system]["hybrid"].append(control)
         rv["Empty"] = empty
+
+    # Remove hybrid controls that are Inherited
+    systems = list(rv.keys())
+    systems.remove("Empty")
+    all_inherited = []
+    for system in systems:
+        all_inherited.extend(rv[system]["inherit"])
+        rv[system]["Both"] = []
+    for system in systems:
+        if rv[system]["inherit"]:
+            continue
+        dupes = []
+        for control in rv[system]["hybrid"]:
+            if control in all_inherited:
+                rv[system]["Both"].append(control)
+                dupes.append(control)
+        if dupes:
+            for dupe in dupes:
+                rv[system]["hybrid"].remove(dupe)
     return rv
 
 
 def print_report(rv):
-    print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}".format(
-        'System', 'Inherited', 'Hybrid', 'In-Not', 'Hy-Not', 'Total'))
+    print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}| {:<8}".format(
+        'System', 'Inherited', 'Hybrid', 'In-Not', 'Hy-Not', 'Total', '(In+Hy)'))
     tot_in = 0
     tot_hy = 0
+    tot_bo = 0
     tot_ni = 0
     tot_nh = 0
     totals = 0
+    empty = rv.pop("Empty")
     for system, values in rv.items():
-        if system == "Empty":
-            continue
         inherit = len(rv[system]["inherit"])
         tot_in += inherit
         hybrid = len(rv[system]["hybrid"])
         tot_hy += hybrid
+        both = len(rv[system]["Both"])
+        tot_bo += both
         not_in = len(rv[system]["not_in"])
         tot_ni += not_in
         not_hy = len(rv[system]["not_hy"])
         tot_nh += not_hy
         total = inherit + hybrid + not_in + not_hy
         totals += total
-        print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}".format(
-            system, inherit, hybrid, not_in, not_hy, total))
-    print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}".format(
-        "Totals", tot_in, tot_hy, tot_ni, tot_nh, totals))
-    print("{:<15} {:<10}".format("Empty:", len(rv["Empty"])))
+        print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}| {:<8}".format(
+            system, inherit, hybrid, not_in, not_hy, total, both))
+    print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}| {:<8}".format(
+        "Totals", tot_in, tot_hy, tot_ni, tot_nh, totals, tot_bo))
+    print("{:<15} {:<10}".format("Empty:", len(empty)))
 
 
-def print_list(rv, shared, inherited, not_in_profile, profile_ids, pretty):
-    if inherited:
+def print_list(rv, shared, inherited, both, not_in_profile, profile_ids, pretty):
+    if both:
+        column = "Both"
+    elif inherited:
         if not_in_profile:
             column = "not_in"
         else:
@@ -285,6 +308,12 @@ def pretty_print_controls(rv, profile_ids, system=False):
     help="List of Fully Inherited controls",
 )
 @click.option(
+    "-b",
+    "--both",
+    is_flag=True,
+    help="List of Hybrid controls that are also Inherited",
+)
+@click.option(
     "-n",
     "--not_in_profile",
     is_flag=True,
@@ -318,7 +347,7 @@ def pretty_print_controls(rv, profile_ids, system=False):
     "source",
     type=click.Path(exists=True, dir_okay=False, file_okay=True, resolve_path=True),
 )
-def main(source, ars, level, empty, shared, inherited,
+def main(source, ars, level, empty, shared, inherited, both,
          not_in_profile, json_out, pretty, quiet):
     """
     Read opencontrol.yaml and perform gap analysis against a Catalog Baseline.
@@ -342,8 +371,8 @@ def main(source, ars, level, empty, shared, inherited,
                 pretty_print_controls(rv, profile_ids, "Empty")
             else:
                 print({"Empty": rv["Empty"]})
-        elif shared or inherited:
-            print_list(rv, shared, inherited, not_in_profile, profile_ids, pretty)
+        elif shared or inherited or both:
+            print_list(rv, shared, inherited, both, not_in_profile, profile_ids, pretty)
         else:
             print_report(rv)
 
