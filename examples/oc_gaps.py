@@ -8,6 +8,7 @@ import requests
 
 from complianceio import opencontrol
 from complianceio.oscal.oscal import oscalize_control_id
+from complianceio.oscal.catalogio import Catalog
 
 """
 Read opencontrol.yaml and perform gap analysis against a Catalog Baseline.
@@ -52,23 +53,14 @@ def get_catalog_keys(standard_key, profile_ids):
     keys = {}
     source_uri = get_source_uri(standard_key)
     url = requests.get(source_uri)
-    catalog = json.loads(url.text)
 
-    groups = catalog["catalog"]["groups"]
-    for group in groups:
-        for control in group["controls"]:
-            control_id = control["id"]
-            if control_id not in profile_ids:
-                # if "cms" in control_id:
-                # print(control_id)
-                continue
-            # ARS 3.1 uses "properties" but 5.0 uses "props"
-            if "properties" in control:
-                keys[control["properties"][0]["value"]] = []
-            elif "props" in control:
-                keys[control["props"][0]["value"]] = []
-            else:
-                print("Can't find props (properties) of {:s}".format(control))
+    catalog = Catalog(url.text, True)
+
+    for id in profile_ids:
+        control = catalog.get_control_by_id(id)
+        if control:
+            prop = catalog.get_control_property_by_name(control, "label")
+            keys[prop] = []
     return keys
 
 

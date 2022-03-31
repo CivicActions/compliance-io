@@ -5,9 +5,9 @@ from typing import List
 class Catalog(object):
     """Represent a catalog"""
 
-    def __init__(self, source):
+    def __init__(self, source, text=False):
         try:
-            self.oscal = self._load_catalog_json(source)
+            self.oscal = self._load_catalog_json(source, text)
             json.dumps(self.oscal)
             self.status = "ok"
             self.status_message = "Success loading catalog"
@@ -22,11 +22,14 @@ class Catalog(object):
             self.info = {}
             self.info["groups"] = None
 
-    def _load_catalog_json(self, source):
+    def _load_catalog_json(self, source, text):
         """Read catalog file - JSON"""
         oscal: dict = {}
-        with open(source, "r") as f:
-            oscal = json.load(f)
+        if text:
+            oscal = json.loads(source)
+        else:
+            with open(source, "r") as f:
+                oscal = json.load(f)
         return oscal.get("catalog")
 
     def find_dict_by_value(self, search_in, search_key: str, search_value: str):
@@ -157,7 +160,15 @@ class Catalog(object):
         value: str = ""
         if control is None:
             return None
-        prop = self.find_dict_by_value(control.get("props"), "name", property_name)
+        # ARS 3.1 uses "properties" but 5.0 uses "props"
+        if "properties" in control:
+            prop = self.find_dict_by_value(
+                control.get("properties"), "name", property_name
+            )
+        elif "props" in control:
+            prop = self.find_dict_by_value(control.get("props"), "name", property_name)
+        else:
+            print("Can't find props (properties) of {:s}".format(control))
         if prop is not None:
             value = prop.get("value")
         return value
