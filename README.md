@@ -54,6 +54,11 @@ to JSON.  See `examples/oc_to_oscal_components.py`.
 
   Take an OpenControl repository and extract the components
   as a JSON OSCAL component definition.
+  
+* `examples/oc_gaps.py`
+
+  Read `opencontrol.yaml` and perform gap analysis against a
+  Catalog Baseline.
 
 * `examples/defenestrate.py`
 
