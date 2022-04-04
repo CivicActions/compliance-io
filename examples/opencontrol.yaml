@@ -1,0 +1,12 @@
+schema_version: "1.0.0"
+name: providers
+metadata:
+  description: ISPB Providers
+  maintainers:
+    - CivicActions
+components:
+  - ../../component-library/ociso/opencontrol
+  - ../../component-library/aws/opencontrol
+  - ../../component-library/eua/opencontrol
+  - ../../component-library/idm/opencontrol
+  
