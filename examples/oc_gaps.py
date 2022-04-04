@@ -117,7 +117,7 @@ def read_nist_json_profile_ids(profile_url, quiet):
     title = profile["profile"]["metadata"]["title"]
     profile_ids = profile["profile"]["imports"][0]["include-controls"][0]["with-ids"]
     if not quiet:
-        print("{:d} controls in {:s}".format(len(profile_ids), title))
+        print(f'{len(profile_ids)} controls in {title}')
     return profile_ids
 
 
@@ -136,12 +136,12 @@ def read_ars_yaml_profile_ids(ars, impact_level, quiet):
         if data["Baseline"] and impact_level in data["Baseline"]:
             # profile_ids.append(oscalize_control_id(control))
             ctrl = profile.get(control)
-            family_name = "{:s} : {:s}".format(
-                ctrl.get("Control Family"), ctrl.get("Control Name"))
+            family_name = (
+                f'{ctrl.get("Control Family")} : {ctrl.get("Control Name")}'
+            )
             profile_ids[oscalize_control_id(control)] = family_name
     if not quiet:
-        print("{:d} controls in ARS {:s} {:s}".format(
-            len(profile_ids), ars, impact_level))
+        print(f'{len(profile_ids)} controls in ARS {ars} {impact_level}')
     return profile_ids
 
 
@@ -150,8 +150,8 @@ def prepare_report(gap_analysis, quiet):
     empty = []
     for standard, controls in gap_analysis.items():
         if not quiet:
-            print("{:d} controls in {:s} (including controls Not in Profile/Baseline)".
-                  format(len(controls), standard))
+            print(f'{len(controls)} controls in {standard} '
+                  '(including controls Not in Profile/Baseline)')
         for control, types in controls.items():
             if not types:
                 empty.append(control)
@@ -200,8 +200,8 @@ def prepare_report(gap_analysis, quiet):
 
 
 def print_report(rv):
-    print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}| {:<8}".format(
-        'System', 'Inherited', 'Hybrid', 'In-Not', 'Hy-Not', 'Total', '(In+Hy)'))
+    print(f'{"System":<15} {"Inherited":<10} {"Hybrid":<8} '
+          f'{"In-Not":<8} {"Hy-Not":<8} {"Total":<8}| {"(In+Hy)":<8}')
     tot_in = 0
     tot_hy = 0
     tot_bo = 0
@@ -222,11 +222,11 @@ def print_report(rv):
         tot_nh += not_hy
         total = inherit + hybrid + not_in + not_hy
         totals += total
-        print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}| {:<8}".format(
-            system, inherit, hybrid, not_in, not_hy, total, both))
-    print("{:<15} {:<10} {:<8} {:<8} {:<8} {:<8}| {:<8}".format(
-        "Totals", tot_in, tot_hy, tot_ni, tot_nh, totals, tot_bo))
-    print("{:<15} {:<10}".format("Empty:", len(empty)))
+        print(f'{system:<15} {inherit:<10} {hybrid:<8} '
+              f'{not_in:<8} {not_hy:<8} {total:<8}| {both:<8}')
+    print(f'{"Totals":<15} {tot_in:<10} {tot_hy:<8} '
+          f'{tot_ni:<8} {tot_nh:<8} {totals:<8}| {tot_bo:<8}')
+    print(f'{"Empty:":<15} {len(empty):<10}')
 
 
 def print_list(rv, shared, inherited, both, not_in_profile, profile_ids, pretty):
@@ -252,14 +252,14 @@ def print_list(rv, shared, inherited, both, not_in_profile, profile_ids, pretty)
 
 
 def pretty_print_list(list, profile_ids, system):
-    print("==== {:s} ====".format(system))
+    print(f'==== {system} ====')
     for control in list:
         id = oscalize_control_id(control)
         if id in profile_ids:
             desc = profile_ids[id]
         else:
             desc = "Not in baseline"
-        print("{:9s} {:s}".format(control, desc))
+        print(f'{control:<9} {desc}')
 
 
 def pretty_print_controls(rv, profile_ids, system=False):
