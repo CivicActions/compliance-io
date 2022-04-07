@@ -69,7 +69,7 @@ def create_groups(p):
             control_id = re.sub(r'S1-([0-9][0-9])', r"SI-\1", control_id)
 
             if family_id is not None and family != family_id:
-                g = add_group(group, family_id, controls)
+                g = add_group(group_id, family_id, controls)
                 groups.append(g)
                 controls = []
 
