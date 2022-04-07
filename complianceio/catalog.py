@@ -2,7 +2,7 @@ import json
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import click
 import openpyxl
@@ -10,6 +10,25 @@ from trestle.oscal.catalog import Catalog, Control, Group, Model
 from trestle.oscal.common import Link, Metadata, Part, Property
 
 from oscal.oscal import control_to_statement_id
+
+import logging
+import sys
+
+# set to INFO or DEBUG for more verbose logging
+logging.basicConfig(stream=sys.stdout, level=logging.ERROR)
+
+'''
+Convert ARS 5.0 spreadsheet into OSCAL code
+SOURCE: https://security.cms.gov/library/cms-acceptable-risk-safeguards-ars
+        ARS 5.0 Full Principle_Single_Assessment_0.xlsx
+
+Todo:
+* add Organization Defined Parameters (ODPs)
+* fix isoformat() -- missing sep='T'
+* add debug arguments
+* currently have to clear col J "CMS Baseline" rows 1065-1067
+* update trestle to OSCAL 1.0.2
+'''
 
 
 def create_groups(p):
@@ -21,12 +40,12 @@ def create_groups(p):
     wb = openpyxl.load_workbook(filename=p, data_only=True)
     groups = []
     ws = wb.worksheets[1]
-    header = [cell for cell in ws['A2:XFD2'][0] if cell.value is not None and cell.value.strip() != '']
+    # header = [cell for cell in ws['A2:XFD2'][0]
+    #           if cell.value is not None and cell.value.strip() != '']
     family_id = None
     group = None
     controls = []
-    bline = {}
-    for row in ws.iter_rows(min_row=3, max_col=19, max_row=1100):
+    for row in ws.iter_rows(min_row=3, max_col=19, max_row=1890):
         if row[0].value is not None:
             family = row[c_map.get('family')].value
             control_id = row[c_map.get('control_id')].value
@@ -44,9 +63,13 @@ def create_groups(p):
                 continue
             # check for ac--09(02)_smt
             control_id = control_id.replace('--', '-')
+            # check for AU14-(01)
+            control_id = re.sub(r'([A-Z][A-Z])([0-9][0-9])\-', r"\1-\2", control_id)
+            # replace S1- with SI-
+            control_id = re.sub(r'S1-([0-9][0-9])', r"SI-\1", control_id)
 
             if family_id is not None and family != family_id:
-                g = add_group(group_id, family_id, controls)
+                g = add_group(group, family_id, controls)
                 groups.append(g)
                 controls = []
 
@@ -146,50 +169,89 @@ def parse_parts(text, cid):
 def parse_control(text, cid):
     """
     This is looking for a very specifically formatted control statement.
-    Top level parts should start with (LETTER), for instance (a)
-    Secondary level should start with NUMBER. for instance 1.
+    Top level parts should start with (LETTER), for instance (a) or a.
+    Secondary level should start with NUMBER. for instance 1. or i.
     Tertiary level should start with LETTER. for instance a.
     As an example:
     (a) This is the top level
-        1. With some subtext
-            a. And tertiary text.
+    a. Could also be top-level
+      a. Could also be top-level
+      1. Could also be top-level
+         1. Some secondary text
+         (1) Also some secondary text
+             a. And tertiary text.
     """
     lines = text.splitlines()
     parts = {cid.strip(): {'prose': None, 'children': {}}}
     pr = None
-    for l in lines:
-        text = l.strip()
-        if re.search(r'^\(([a-z])\)', text):
-            first = re.search(r'^\(([a-z])\)', text)
-            if first:
-                f = first.group()
-                fid = f.replace('(', '').replace(')', '')
-                prose = text.strip(f'({f}) ')
-                parts[cid.strip()]['children'][fid.strip()] = {
-                    'prose': prose,
-                    'children': {},
-                }
-        elif re.search(r'^[1-9]\.\s', text):
-            second = re.search(r'^[1-9]\.\s', text)
-            if second:
-                s = second.group()
-                sid = s.replace('. ', '')
-                prose = text.strip(f'{s}')
-                parts[cid.strip()]['children'][fid.strip()]['children']\
-                    [sid.strip()] = {
-                    'prose': prose,
-                    'children': {},
-                }
-        elif re.search(r'^[a-z]\.\s', text):
-            third = re.search(r'^[a-z]\.\s', text)
-            if third:
-                t = third.group()
-                tid = t.replace('. ', '')
-                prose = text.strip(f'{t}')
-                parts[cid.strip()]['children'][fid.strip()]\
-                    ['children'][sid.strip()]['children'][tid.strip()] = {'prose': prose}
+    fid = ''
+    sid = ''
+    for text in lines:
+        firstdot = ''
+        second = ''
+        secondparen = ''
+        third = ''
+        first = re.search(r'^\s*\(([a-z])\)', text)          # |(a)
+        if not first:
+            if not fid:
+                firstdot = re.search(r'^\s*[a-z]\.', text)   # |*a.
+            if not firstdot:
+                second = re.search(r'^\s+[1-9i]+\.', text)   # |(a) 1.
+                if not second:
+                    if fid:                                  # |(a) (1)
+                        secondparen = re.search(r'^\s+\(([1-9]+)\)', text)
+                elif not fid:
+                    firstdot = second                        # | 1.
+                if fid:
+                    third = re.search(r'^\s+[a-z]\.', text)  # |(a) 1. a.
+                    if third and not sid:
+                        second = third
+        text = text.strip()
+        if first:
+            f = first.group()
+            logging.debug(f'1-"{f}"')
+            fid = f.replace('(', '').replace(')', '')
+            prose = text.strip(f'({f})')
+            parts[cid.strip()]['children'][fid.strip()] = {
+                'prose': prose,
+                'children': {},
+            }
+        elif firstdot:
+            f = firstdot.group()
+            logging.debug(f'1-"{f}"')
+            fid = f.replace('.', '')
+            prose = text.strip(f'{f}').strip()
+            parts[cid.strip()]['children'][fid.strip()] = {
+                'prose': prose,
+                'children': {},
+            }
+        elif second:
+            s = second.group()
+            logging.debug(f'2-"{s}"')
+            sid = s.replace('.', '')
+            prose = text.strip(f'{s}')
+            parts[cid.strip()]['children'][fid.strip()]['children'][sid.strip()] = {
+                'prose': prose,
+                'children': {},
+            }
+        elif secondparen:
+            s = secondparen.group()
+            logging.debug(f'2-"{s}"')
+            sid = s.replace('(', '').replace(')', '')
+            prose = text.strip(f'{s}')
+            parts[cid.strip()]['children'][fid.strip()]['children'][sid.strip()] = {
+                'prose': prose,
+                'children': {},
+            }
+        elif third:
+            t = third.group()
+            logging.debug(f'3-"{t}"')
+            tid = t.replace('.', '')
+            prose = text.strip(f'{t}')
+            parts[cid.strip()]['children'][fid.strip()]\
+                ['children'][sid.strip()]['children'][tid.strip()] = {'prose': prose}
         else:
-            pr = f'{pr}\n{l}' if pr else l
+            pr = f'{pr}\n{text}' if pr else text
             parts[cid.strip()]['prose'] = pr
 
     return parts
@@ -210,6 +272,7 @@ def create_parts(parts):
                         if 'children' in sv:
                             tertiary = []
                             for t, tv in sv.get('children').items():
+                                logging.info(f'{k}.{f}.{s}.{t}')
                                 tertiary.append(Part(
                                     id=f'{k}.{f}.{s}.{t}',
                                     name='item',
@@ -220,6 +283,7 @@ def create_parts(parts):
                                     prose=tv.get('prose')
                                 ))
                         tp = tertiary if len(tertiary) > 0 else None
+                        logging.info(f'{k}.{f}.{s}')
                         secondary.append(Part(
                             id=f'{k}.{f}.{s}',
                             name='item',
@@ -231,7 +295,7 @@ def create_parts(parts):
                             prose=sv.get('prose'),
                         ))
                 sp = secondary if len(secondary) > 0 else None
-                print(f'{k}.{f}')
+                logging.info(f'{k}.{f}')
                 first.append(Part(
                     id=f'{k}.{f}',
                     name='item',
@@ -243,7 +307,7 @@ def create_parts(parts):
                     prose=fv.get('prose'),
                 ))
         fp = first if len(first) > 0 else None
-        print(f'{k}')
+        logging.info(f'{k}')
         part.append(Part(
             id=f'{k}',
             name='item',
@@ -296,6 +360,7 @@ def main(title, source):
         )
     root = Model(catalog=catalog).dict(by_alias=True, exclude_unset=True, exclude_none=True)
     print(json.dumps(root, indent=2, default=str))
+
 
 if __name__ == "__main__":
     main()
