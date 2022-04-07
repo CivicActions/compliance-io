@@ -23,11 +23,11 @@ SOURCE: https://security.cms.gov/library/cms-acceptable-risk-safeguards-ars
         ARS 5.0 Full Principle_Single_Assessment_0.xlsx
 
 Todo:
-* add Organization Defined Parameters (ODPs)
 * fix isoformat() -- missing sep='T'
 * add debug arguments
-* currently have to clear col J "CMS Baseline" rows 1065-1067
+* handle Redacted links
 * update trestle to OSCAL 1.0.2
+* add Organization Defined Parameters (ODPs)
 '''
 
 
@@ -111,6 +111,9 @@ def create_groups(p):
                         if r[:4] != 'None':
                             link = r.strip()
                             if link:
+                                # clean up Redacted links
+                                if "Redacted" in link:
+                                    continue
                                 links.append(Link(
                                     href=f'#{link}',
                                     rel='related'
@@ -344,6 +347,7 @@ def main(title, source):
     groups = create_groups(p)
     uuid = uuid4().urn
 
+    # FIXME: missing 'T' separator
     today = datetime.now(timezone(timedelta(hours=-6))).isoformat()
 
     md = Metadata(
