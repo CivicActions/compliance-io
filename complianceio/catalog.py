@@ -14,7 +14,7 @@ from oscal.oscal import control_to_statement_id
 import logging
 import sys
 
-# set to INFO or DEBUG for more verbose logging
+# set to INFO or DEBUG for more verbose logging (ERROR for none)
 logging.basicConfig(stream=sys.stdout, level=logging.ERROR)
 
 '''
@@ -194,21 +194,21 @@ def parse_control(text, cid):
         second = ''
         secondparen = ''
         third = ''
-        first = re.search(r'^\s*\(([a-z])\)', text)          # |(a)
+        first = re.search(r'^\s*\(([a-z])\)', text)             # |*(a)
         if not first:
-            if not fid:
-                firstdot = re.search(r'^\s*[a-z]\.', text)   # |*a.
-            if not firstdot:
-                second = re.search(r'^\s+[1-9i]+\.', text)   # |(a) 1.
-                if not second:
-                    if fid:                                  # |(a) (1)
-                        secondparen = re.search(r'^\s+\(([1-9]+)\)', text)
-                elif not fid:
-                    firstdot = second                        # | 1.
-                if fid:
-                    third = re.search(r'^\s+[a-z]\.', text)  # |(a) 1. a.
-                    if third and not sid:
-                        second = third
+            firstdot = re.search(r'^[a-z]\.', text)             # |a.
+        if not first and not firstdot:
+            second = re.search(r'^\s+[0-9i]+\.', text)          # |(a) 1.
+            if second and not fid:
+                firstdot = second                               # |  1.
+        if not first and not firstdot and not second:
+            secondparen = re.search(r'^\s+\(([0-9]+)\)', text)  # |(a) (1)
+            if secondparen and not fid:
+                first = secondparen
+        if not first and not firstdot and not second and not secondparen:
+            third = re.search(r'^\s+[a-z]\.', text)             # |(a) 1. a.
+            if third and not sid:
+                firstdot = third                                # |  a.
         text = text.strip()
         if first:
             f = first.group()
