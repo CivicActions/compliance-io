@@ -204,7 +204,7 @@ def parse_control(text, cid):
         if not first and not firstdot and not second:
             secondparen = re.search(r'^\s+\(([0-9]+)\)', text)  # |(a) (1)
             if secondparen and not fid:
-                first = secondparen
+                first = secondparen                             # |  (1)
         if not first and not firstdot and not second and not secondparen:
             third = re.search(r'^\s+[a-z]\.', text)             # |(a) 1. a.
             if third and not sid:
@@ -214,7 +214,7 @@ def parse_control(text, cid):
             f = first.group()
             logging.debug(f'1-"{f}"')
             fid = f.replace('(', '').replace(')', '')
-            prose = text.strip(f'({f})')
+            prose = text.strip(f'({f})').strip()
             parts[cid.strip()]['children'][fid.strip()] = {
                 'prose': prose,
                 'children': {},
@@ -232,7 +232,7 @@ def parse_control(text, cid):
             s = second.group()
             logging.debug(f'2-"{s}"')
             sid = s.replace('.', '')
-            prose = text.strip(f'{s}')
+            prose = text.strip(f'{s}').strip()
             parts[cid.strip()]['children'][fid.strip()]['children'][sid.strip()] = {
                 'prose': prose,
                 'children': {},
@@ -241,7 +241,7 @@ def parse_control(text, cid):
             s = secondparen.group()
             logging.debug(f'2-"{s}"')
             sid = s.replace('(', '').replace(')', '')
-            prose = text.strip(f'{s}')
+            prose = text.strip(f'{s}').strip()
             parts[cid.strip()]['children'][fid.strip()]['children'][sid.strip()] = {
                 'prose': prose,
                 'children': {},
@@ -250,7 +250,7 @@ def parse_control(text, cid):
             t = third.group()
             logging.debug(f'3-"{t}"')
             tid = t.replace('.', '')
-            prose = text.strip(f'{t}')
+            prose = text.strip(f'{t}').strip()
             parts[cid.strip()]['children'][fid.strip()]\
                 ['children'][sid.strip()]['children'][tid.strip()] = {'prose': prose}
         else:
