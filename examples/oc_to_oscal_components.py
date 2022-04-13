@@ -71,6 +71,14 @@ def main(source):
                         'in the included statements.'
                     )
                 )
+                if o_control.parameters:
+                    for o_parameter in o_control.parameters:
+                        ir.add_property(
+                            component.Property(
+                                name=o_parameter.key,
+                                value=o_parameter.text
+                            )
+                        )
                 for o_statement in o_control.narrative:
                     # Do not consider "shared" a key; may be others...
                     if o_statement.key and o_statement.key != "shared":

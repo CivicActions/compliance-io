@@ -86,11 +86,25 @@ class ImplementedRequirement(OSCALElement):
         self.set_parameters.append(set_parameter)
         return self
 
+    def add_property(self, property: Property):
+        key = property.name
+        if not self.props:
+            self.props = []
+        elif key in self.props:
+            raise KeyError(
+                f"Property {key} already in ImplementedRequirement"
+                " for {self.control_id}"
+            )
+        self.props.append(property)
+        return self
+
     class Config:
         fields = {
             "control_id": "control-id",
             "responsible_roles": "responsible-roles",
             "set_parameters": "set-parameters",
+            "properties": "props"
+            
         }
         allow_population_by_field_name = True
         exclude_if_false = ["statements", "responsible-roles", "set-parameters"]
