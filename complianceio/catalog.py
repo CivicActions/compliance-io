@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -26,7 +26,6 @@ Todo:
 * fix isoformat() -- missing sep='T'
 * add debug arguments
 * handle Redacted links
-* update trestle to OSCAL 1.0.2
 * add Organization Defined Parameters (ODPs)
 '''
 
@@ -38,10 +37,13 @@ def create_groups(p):
     with open(Path.cwd().joinpath('complianceio', 'header_map.json'), 'r') as f:
         c_map = json.load(f)
     wb = openpyxl.load_workbook(filename=p, data_only=True)
-    groups = []
-    ws = wb.worksheets[1]
+    if "Full" not in wb.sheetnames:
+        print(f"Sheetname 'Full' not found in: {wb.sheetnames}")
+        quit()
+    ws = wb["Full"]
     # header = [cell for cell in ws['A2:XFD2'][0]
     #           if cell.value is not None and cell.value.strip() != '']
+    groups = []
     family_id = None
     group = None
     controls = []
@@ -52,21 +54,21 @@ def create_groups(p):
             group = control_id[:2].lower()
             name = row[c_map.get('name')].value
             control_text = row[c_map.get('control')].value
-            implementation = row[c_map.get('implementation')].value
-            responsiblity = row[c_map.get('responsiblity')].value
+            responsibility = row[c_map.get('responsiblity')].value
             related = row[c_map.get('responsiblity')].value
             reference = row[c_map.get('reference')].value
             baseline = row[c_map.get('baseline')].value
+            priority = row[c_map.get('priority')].value
 
-            # ignore duplicated parts (may be better to use these instead)
+            # ignore duplicated parts (elements)
             if baseline is None:
                 continue
-            # check for ac--09(02)_smt
+            # check for ac--09(02)
             control_id = control_id.replace('--', '-')
             # check for AU14-(01)
             control_id = re.sub(r'([A-Z][A-Z])([0-9][0-9])\-', r"\1-\2", control_id)
-            # replace S1- with SI-
-            control_id = re.sub(r'S1-([0-9][0-9])', r"SI-\1", control_id)
+#            # replace S1- with SI-
+#            control_id = re.sub(r'S1-([0-9][0-9])', r"SI-\1", control_id)
 
             if family_id is not None and family != family_id:
                 g = add_group(group_id, family_id, controls)
@@ -120,17 +122,36 @@ def create_groups(p):
                                 ))
                 l = links if len(links) > 0 else None
 
-                controls.append(Control(
-                    id=cid.strip('_smt'),
-                    class_='ARS-5.0-Mandatory',
-                    title=name,
-                    props=[Property(
+                props = [
+                    Property(
                         name='label',
                         value=control_id
-                    ), Property(
+                    ),
+                    Property(
                         name='sort-id',
                         value=control_id.lower()
-                    )],
+                    ),
+                    Property(
+                        name='responsibility',
+                        value=str(responsibility.replace('\n', ',').strip().rstrip(','))
+                    ),
+                    Property(
+                        name='baseline',
+                        value=str(baseline.replace('\n', ',').rstrip(','))
+                    )
+                ]
+                if priority and priority.strip():
+                    props.append(
+                        Property(
+                            name='priority',
+                            value=priority.strip()
+                        )
+                    )
+                controls.append(Control(
+                    id=cid.split('_')[0],
+                    class_='ARS-5.0-Mandatory',
+                    title=name,
+                    props=props,
                     links=l,
                     parts=parts,
                 ))
@@ -347,14 +368,16 @@ def main(title, source):
     groups = create_groups(p)
     uuid = uuid4().urn
 
-    # FIXME: missing 'T' separator
-    today = datetime.now(timezone(timedelta(hours=-6))).isoformat()
 
+    # today = datetime.now(timezone(timedelta(hours=-6))).isoformat(sep='T')
+    today = datetime.now().astimezone(timezone.utc).isoformat(sep='T')
+
+    # FIXME: missing 'T' separator in last-modified
     md = Metadata(
         title=title,
-        last_modified=str(today),
-        version='1.0',
-        oscal_version='1.0.0'
+        last_modified=today,
+        version='1.1',
+        oscal_version='1.0.2'
     )
 
     catalog = Catalog(
