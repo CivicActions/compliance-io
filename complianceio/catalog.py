@@ -30,7 +30,7 @@ Todo:
 '''
 
 
-def create_groups(p):
+def create_groups(p, minimize):
     """
     Parse the spreadsheet to get groups by family.
     """
@@ -52,7 +52,7 @@ def create_groups(p):
             family = row[c_map.get('family')].value
             control_id = row[c_map.get('control_id')].value
             group = control_id[:2].lower()
-            name = row[c_map.get('name')].value
+            name = row[c_map.get('name')].value.strip()
             control_text = row[c_map.get('control')].value
             responsibility = row[c_map.get('responsiblity')].value
             related = row[c_map.get('responsiblity')].value
@@ -67,8 +67,6 @@ def create_groups(p):
             control_id = control_id.replace('--', '-')
             # check for AU14-(01)
             control_id = re.sub(r'([A-Z][A-Z])([0-9][0-9])\-', r"\1-\2", control_id)
-#            # replace S1- with SI-
-#            control_id = re.sub(r'S1-([0-9][0-9])', r"SI-\1", control_id)
 
             if family_id is not None and family != family_id:
                 g = add_group(group_id, family_id, controls)
@@ -87,17 +85,18 @@ def create_groups(p):
                     part = add_additional(pid, 'implementation', imp.strip())
                     parts.append(part)
 
-                hva = row[c_map.get('hva_standards')].value
-                if hva and hva.strip():
-                    pid = cid.replace('_smt', '_hva')
-                    part = add_additional(pid, 'hva', hva.strip())
-                    parts.append(part)
+                if not minimize:
+                    hva = row[c_map.get('hva_standards')].value
+                    if hva and hva.strip():
+                        pid = cid.replace('_smt', '_hva')
+                        part = add_additional(pid, 'hva', hva.strip())
+                        parts.append(part)
 
-                prv = row[c_map.get('privacy_standards')].value
-                if prv and prv.strip():
-                    pid = cid.replace('_smt', '_prv')
-                    part = add_additional(pid, 'privacy', prv.strip())
-                    parts.append(part)
+                    prv = row[c_map.get('privacy_standards')].value
+                    if prv and prv.strip():
+                        pid = cid.replace('_smt', '_prv')
+                        part = add_additional(pid, 'privacy', prv.strip())
+                        parts.append(part)
 
                 gdn = row[c_map.get('discussion')].value
                 if gdn and gdn.strip():
@@ -134,12 +133,18 @@ def create_groups(p):
                     Property(
                         name='responsibility',
                         value=str(responsibility.replace('\n', ',').strip().rstrip(','))
-                    ),
-                    Property(
-                        name='baseline',
-                        value=str(baseline.replace('\n', ',').rstrip(','))
                     )
                 ]
+                if "Supplemental" in baseline:
+                    control_class = "ARS-5.0-Supplemental"
+                else:
+                    control_class = "ARS-5.0-Mandatory"
+                    props.append(
+                        Property(
+                            name='baseline',
+                            value=str(baseline.replace('\n', ',').rstrip(','))
+                        )
+                    )
                 if priority and priority.strip():
                     props.append(
                         Property(
@@ -149,7 +154,7 @@ def create_groups(p):
                     )
                 controls.append(Control(
                     id=cid.split('_')[0],
-                    class_='ARS-5.0-Mandatory',
+                    class_=control_class,
                     title=name,
                     props=props,
                     links=l,
@@ -360,12 +365,33 @@ def add_additional(pid, name, prose):
     type=click.Path(exists=True, dir_okay=False, file_okay=True, resolve_path=True)
 
 )
-def main(title, source):
+@click.option(
+    "-a",
+    "--ars_version",
+    default="5.01",
+    show_default=True,
+    help="ARS version ",
+)
+@click.option(
+    "-o",
+    "--oscal_version",
+    default="1.0.2",
+    show_default=True,
+    help="OSCAL version ",
+)
+@click.option(
+    "-m",
+    "--minimize",
+    is_flag=True,
+    help="Minimize output: no PII or HVA overlays.",
+)
+def main(title, source, ars_version, oscal_version, minimize):
     """
-    Create an OSCAL Catalog.
+    Create an OSCAL Catalog from Excel (.xlsx) spreadsheet.
+    Source: https://security.cms.gov/library/cms-acceptable-risk-safeguards-ars
     """
     p = Path(source)
-    groups = create_groups(p)
+    groups = create_groups(p, minimize)
     uuid = uuid4().urn
 
 
@@ -376,8 +402,8 @@ def main(title, source):
     md = Metadata(
         title=title,
         last_modified=today,
-        version='1.1',
-        oscal_version='1.0.2'
+        version=ars_version,
+        oscal_version=oscal_version
     )
 
     catalog = Catalog(
