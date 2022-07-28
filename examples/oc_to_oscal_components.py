@@ -31,11 +31,11 @@ def main(source):
         ),
         'CMS_ARS_3_1': (
             'https://raw.githubusercontent.com/CMSgov/ars-machine-readable'
-            '/main/3.1/oscal/CMS_ARS_3_1_catalog.json'
+            '/main/3.1/oscal/json/CMS_ARS_3_1_catalog.json'
         ),
         'CMS_ARS_5_0': (
             'https://raw.githubusercontent.com/CMSgov/ars-machine-readable'
-            'main/5.0/oscal/CMS_ARS_5_0_catalog.json'
+            '/main/5.0/oscal/json/CMS_ARS_5_0_catalog.json'
         )
     }
 
