@@ -46,7 +46,11 @@ def main(source):
     cd = component.ComponentDefinition(metadata=md)
     cd.components = []
     for o_comp in oc.components:
-        c = component.Component(title=o_comp.name, description=o_comp.name)
+        if o_comp.key:
+            desc = o_comp.key
+        else:
+            desc = o_comp.name
+        c = component.Component(title=o_comp.name, description=desc)
         c.control_implementations = []
 
         sorted_controls = sorted(o_comp.satisfies, key=lambda c: c.standard_key)
