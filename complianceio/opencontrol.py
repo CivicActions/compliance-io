@@ -4,16 +4,11 @@ OpenControl repositories.
 """
 from enum import Enum
 from pathlib import Path
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
+from typing import Any, Dict, List, Optional, Set
 
 import rtyaml
 from blinker import signal
-from pydantic import BaseModel
-from pydantic import PrivateAttr
+from pydantic import BaseModel, PrivateAttr
 from slugify import slugify
 
 OPENCONTROL_SCHEMA_VERSION = "1.0.0"
@@ -196,7 +191,7 @@ class OpenControl(OpenControlElement):
             return oc
 
     def save(self):
-        "Write back an OpenControl repo to where it was loaded"
+        """Write back an OpenControl repo to where it was loaded"""
         root_dir = self._root_dir
         root = self.dict(exclude={"standards", "components", "systems"})
         root["certifications"] = [
@@ -209,7 +204,7 @@ class OpenControl(OpenControlElement):
         print(rtyaml.dump(root))
 
     def save_as(self, base_dir):
-        "Save an OpenControl repo in a new location"
+        """Save an OpenControl repo in a new location"""
         root = self.dict(exclude={"standards", "components", "systems"})
         root["certifications"] = []
         for cert in self.certifications:
@@ -267,7 +262,8 @@ class OpenControlYaml(BaseModel):
     systems: Optional[List[str]]
     dependencies: Optional[Dict[str, List[Dependency]]]
 
-    def _component_path(self, component, relative_to):
+    @staticmethod
+    def _component_path(component, relative_to):
         path = relative_to / component
         if path.is_dir():
             path = path / "component.yaml"
@@ -300,7 +296,8 @@ class OpenControlYaml(BaseModel):
                 raise Exception(msg)
         return resolved_components
 
-    def _is_fen(self, obj):
+    @staticmethod
+    def _is_fen(obj):
         satisfies = obj.get("satisfies", [])
         if isinstance(satisfies, list) and len(satisfies) > 0:
             return isinstance(satisfies[0], str)
