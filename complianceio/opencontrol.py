@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import rtyaml
 from blinker import signal
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, PrivateAttr, ValidationError
 from slugify import slugify
 
 OPENCONTROL_SCHEMA_VERSION = "1.0.0"
@@ -74,8 +74,8 @@ class Control(OpenControlElement):
 
 
 class Metadata(OpenControlElement):
-    description: Optional[str]
-    maintainers: Optional[List[str]]
+    description: str
+    maintainers: List[str]
 
 
 class Verification(OpenControlElement):
@@ -147,6 +147,12 @@ class Dependency(OpenControlElement):
     contextdir: Optional[str]
 
 
+class Dependencies(OpenControlElement):
+    certifications: Optional[List[Dependency]] = []
+    standards: Optional[List[Dependency]] = []
+    systems: Optional[List[Dependency]] = []
+
+
 class OpenControl(OpenControlElement):
     """
     Container for OpenControl repository.
@@ -155,15 +161,18 @@ class OpenControl(OpenControlElement):
     schema_version: str = OPENCONTROL_SCHEMA_VERSION
     name: str
     metadata: Optional[Metadata]
-    components: List[Component] = []
-    standards: Dict[str, Standard] = {}
-    systems: List[System] = []
-    certifications: List[Certification] = []
+    components: List[str]
+    standards: List[str]
+    certifications: List[str]
+    dependencies: Optional[Dependencies]
 
     _root_dir: str = PrivateAttr()
 
     def new_relative_path(self):
         return Path("opencontrol.yaml")
+
+    def get_components(self) -> list:
+        return self.components
 
     @classmethod
     def debug_file(cls, sender, **kwargs):
@@ -186,9 +195,10 @@ class OpenControl(OpenControlElement):
         with p.open() as f:
             FILE_SIGNAL.send(cls, operation="read", path=p)
             root = rtyaml.load(f)
-            oc = OpenControlYaml.parse_obj(root).resolve(p.parent)
-            oc._root_dir = p.parent
-            return oc
+            try:
+                return cls(**root)
+            except ValidationError as error:
+                raise error
 
     def save(self):
         """Write back an OpenControl repo to where it was loaded"""
